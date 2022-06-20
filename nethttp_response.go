@@ -32,6 +32,7 @@ func (c *netHTTPCompressor) Flush() error {
 		defer gzipWriter.Close()
 
 		c.responseWriter.Header().Set("Content-Encoding", "gzip")
+		c.responseWriter.WriteHeader(c.statusCode)
 		if _, err = gzipWriter.Write(c.buffer); err != nil {
 			return err
 		}
@@ -43,6 +44,7 @@ func (c *netHTTPCompressor) Flush() error {
 		defer zlibWriter.Close()
 
 		c.responseWriter.Header().Set("Content-Encoding", "deflate")
+		c.responseWriter.WriteHeader(c.statusCode)
 		if _, err = zlibWriter.Write(c.buffer); err != nil {
 			return err
 		}
