@@ -39,11 +39,6 @@ func TestNetHttp(t *testing.T) {
 			requestType:    identityType,
 			responseType:   gzipType,
 		}, {
-			name:           "vanilla request zlib response",
-			acceptEncoding: "deflate",
-			requestType:    identityType,
-			responseType:   zlibType,
-		}, {
 			name:           "gzip request vanilla response",
 			acceptEncoding: "identity",
 			requestType:    gzipType,
@@ -61,6 +56,7 @@ func TestNetHttp(t *testing.T) {
 		b, _ := io.ReadAll(r.Body)
 		input := strings.TrimSpace(string(b))
 		output := reverse(input)
+		w.WriteHeader(http.StatusAccepted)
 		w.Write([]byte(output))
 	}))
 
@@ -106,7 +102,7 @@ func TestNetHttp(t *testing.T) {
 			defer response.Body.Close()
 
 			//checks
-			assert.Equal(t, http.StatusOK, response.StatusCode)
+			assert.Equal(t, http.StatusAccepted, response.StatusCode)
 
 			returnedBody, err := io.ReadAll(response.Body)
 			assert.Nil(t, err)

@@ -1,8 +1,10 @@
 package compresshandler
 
 import (
+	"io"
 	"net/http"
 
+	"github.com/andybalholm/brotli"
 	"github.com/klauspost/compress/gzip"
 	"github.com/klauspost/compress/zlib"
 )
@@ -25,9 +27,10 @@ func wrapNetHTTPRequest(r *http.Request) (*http.Request, error) {
 				return r, err
 			}
 			r.Body = zlibReader
-		case lzwType:
-			return r, ErrNotSupported
 		case brotliType:
+			brotliReader := brotli.NewReader(r.Body)
+			r.Body = io.NopCloser(brotliReader)
+		case lzwType:
 			return r, ErrNotSupported
 		}
 	}

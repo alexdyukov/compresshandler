@@ -77,7 +77,7 @@ func parseEncoding(a []byte, pos int) (t int, q float64, newpos int) {
 		case 'y', 'Y': // y stands only in identity
 			t = identityType
 			pos += identitySkipPosition
-		case '*': // prefer gzip as web standart
+		case '*': // it means any other, but we cast gzip as web standart
 			t = gzipType
 			pos += 1
 		case '0', '1': // possible values in range [0.0;1.0] thats why we are looking for 0 and 1 only
@@ -97,8 +97,8 @@ func getPreferedCompression(acceptEncoding []byte) int {
 
 	for pos < len(acceptEncoding) {
 		t, q, pos = parseEncoding(acceptEncoding, pos)
-		// TODO LZW & brotli; unsupported now
-		if t == lzwType || t == brotliType {
+		// TODO LZW; unsupported now
+		if t == lzwType {
 			continue
 		}
 		if bestQuality < q {

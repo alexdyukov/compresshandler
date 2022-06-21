@@ -3,6 +3,7 @@ package compresshandler
 import (
 	"net/http"
 
+	"github.com/andybalholm/brotli"
 	"github.com/klauspost/compress/gzip"
 	"github.com/klauspost/compress/zlib"
 )
@@ -10,6 +11,7 @@ import (
 type Config struct {
 	GzipLevel        int
 	ZlibLevel        int
+	BrotliLevel      int
 	MinContentLength int
 }
 
@@ -20,6 +22,10 @@ func NewNetHTTPHandler(config Config) func(next http.Handler) http.Handler {
 
 	if config.ZlibLevel < zlib.BestSpeed || config.ZlibLevel > zlib.BestCompression {
 		config.ZlibLevel = zlib.DefaultCompression
+	}
+
+	if config.BrotliLevel < brotli.BestSpeed || config.BrotliLevel > brotli.BestCompression {
+		config.BrotliLevel = brotli.DefaultCompression
 	}
 
 	if config.MinContentLength < 0 {
