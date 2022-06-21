@@ -3,6 +3,7 @@ module github.com/alexdyukov/compresshandler
 go 1.18
 
 require (
+	github.com/andybalholm/brotli v1.0.4
 	github.com/klauspost/compress v1.15.6
 	github.com/stretchr/testify v1.7.2
 )

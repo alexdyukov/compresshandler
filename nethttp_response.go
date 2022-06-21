@@ -3,6 +3,7 @@ package compresshandler
 import (
 	"net/http"
 
+	"github.com/andybalholm/brotli"
 	"github.com/klauspost/compress/gzip"
 	"github.com/klauspost/compress/zlib"
 )
@@ -19,8 +20,8 @@ func (c *netHTTPCompressor) Flush() error {
 	if len(c.buffer) < c.config.MinContentLength {
 		//do not compress
 		c.responseWriter.WriteHeader(c.statusCode)
-		c.responseWriter.Write(c.buffer)
-		return nil
+		_, err := c.responseWriter.Write(c.buffer)
+		return err
 	}
 
 	switch getPreferedCompression(c.acceptEncoding) {
@@ -33,9 +34,8 @@ func (c *netHTTPCompressor) Flush() error {
 
 		c.responseWriter.Header().Set("Content-Encoding", "gzip")
 		c.responseWriter.WriteHeader(c.statusCode)
-		if _, err = gzipWriter.Write(c.buffer); err != nil {
-			return err
-		}
+		_, err = gzipWriter.Write(c.buffer)
+		return err
 	case zlibType:
 		zlibWriter, err := zlib.NewWriterLevel(c.responseWriter, c.config.ZlibLevel)
 		if err != nil {
@@ -45,21 +45,24 @@ func (c *netHTTPCompressor) Flush() error {
 
 		c.responseWriter.Header().Set("Content-Encoding", "deflate")
 		c.responseWriter.WriteHeader(c.statusCode)
-		if _, err = zlibWriter.Write(c.buffer); err != nil {
-			return err
-		}
+		_, err = zlibWriter.Write(c.buffer)
+		return err
+	case brotliType:
+		brotliWriter := brotli.NewWriterLevel(c.responseWriter, c.config.BrotliLevel)
+		defer brotliWriter.Close()
+
+		c.responseWriter.Header().Set("Content-Encoding", "br")
+		c.responseWriter.WriteHeader(c.statusCode)
+		_, err := brotliWriter.Write(c.buffer)
+		return err
 	case lzwType:
 		panic("unsupported compression: LZW")
-	case brotliType:
-		panic("unsupported compression: brotli")
-	default: //no compression
-		c.responseWriter.WriteHeader(c.statusCode)
-		if _, err := c.responseWriter.Write(c.buffer); err != nil {
-			return err
-		}
 	}
 
-	return nil
+	//no compression
+	c.responseWriter.WriteHeader(c.statusCode)
+	_, err := c.responseWriter.Write(c.buffer)
+	return err
 }
 
 func (c *netHTTPCompressor) Header() http.Header {
