@@ -63,21 +63,21 @@ func TestNetHttp(t *testing.T) {
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			//request
+			// request
 			var request *http.Request
 
 			switch tt.requestType {
 			case gzipType:
 				requestBody, err := gzipSlice([]byte(testString))
 				if err != nil {
-					panic("cannot initialize requestBody with gzipType")
+					t.Fatalf("cannot initialize requestBody with gzipType: %v", err)
 				}
 				request = httptest.NewRequest(http.MethodGet, "/", bytes.NewReader(requestBody))
 				request.Header.Set("Content-Encoding", "gzip")
 			case zlibType:
 				requestBody, err := zlibSlice([]byte(testString))
 				if err != nil {
-					panic("cannot initialize requestBody with zlibType")
+					t.Fatalf("cannot initialize requestBody with zlibType: %v", err)
 				}
 				request = httptest.NewRequest(http.MethodGet, "/", bytes.NewReader(requestBody))
 				request.Header.Set("Content-Encoding", "deflate")
@@ -95,13 +95,13 @@ func TestNetHttp(t *testing.T) {
 				request.Header.Set("Accept-Encoding", "identity")
 			}
 
-			//response
+			// response
 			recorder := httptest.NewRecorder()
 			revHTTP.ServeHTTP(recorder, request)
 			response := recorder.Result()
 			defer response.Body.Close()
 
-			//checks
+			// checks
 			assert.Equal(t, http.StatusAccepted, response.StatusCode)
 
 			returnedBody, err := io.ReadAll(response.Body)
@@ -114,13 +114,13 @@ func TestNetHttp(t *testing.T) {
 				assert.Contains(t, response.Header.Get("Content-Encoding"), "gzip")
 				uncompressedReturnBody, err = ungzipSlice(returnedBody)
 				if err != nil {
-					panic("cannot get uncompressed body from gzipped response")
+					t.Fatalf("cannot get uncompressed body from gziped response: %v", err)
 				}
 			case zlibType:
 				assert.Contains(t, response.Header.Get("Content-Encoding"), "deflate")
 				uncompressedReturnBody, err = unzlibSlice(returnedBody)
 				if err != nil {
-					panic("cannot get uncompressed body from zlibbed response")
+					t.Fatalf("cannot get uncompressed body from zlibbed response: %v", err)
 				}
 			default:
 				uncompressedReturnBody = returnedBody
