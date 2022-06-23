@@ -14,11 +14,11 @@ func zlibSlice(a []byte) ([]byte, error) {
 	var b bytes.Buffer
 	zlibWriter := zlib.NewWriter(&b)
 	if _, err := zlibWriter.Write(a); err != nil {
-		panic("gzipSlice Write error: " + err.Error())
+		return b.Bytes(), err
 	}
 
 	if err := zlibWriter.Flush(); err != nil {
-		panic("gzipSlice Flush error: " + err.Error())
+		return b.Bytes(), err
 	}
 
 	return b.Bytes(), nil
@@ -27,7 +27,7 @@ func zlibSlice(a []byte) ([]byte, error) {
 func unzlibSlice(a []byte) ([]byte, error) {
 	r, err := zlib.NewReader(bytes.NewBuffer(a))
 	if err != nil {
-		panic("unzlibSlice " + err.Error())
+		return nil, err
 	}
 	retval, _ := io.ReadAll(r)
 
@@ -39,12 +39,12 @@ func TestZlib(t *testing.T) {
 	input := []byte(test)
 	zlibbed, err := zlibSlice(input)
 	if err != nil {
-		panic("zlibSlice " + err.Error())
+		t.Fatalf("zlibSlice: %v", err)
 	}
 
 	unzlibbed, err := unzlibSlice(zlibbed)
 	if err != nil {
-		panic("unzlibSlice: " + err.Error())
+		t.Fatalf("unzlibSlice: %v", err)
 	}
 
 	assert.True(t, strings.TrimSpace(string(input)) == strings.TrimSpace(string(unzlibbed)))

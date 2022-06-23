@@ -14,11 +14,11 @@ func gzipSlice(a []byte) ([]byte, error) {
 	var b bytes.Buffer
 	gzipWriter := gzip.NewWriter(&b)
 	if _, err := gzipWriter.Write(a); err != nil {
-		panic("gzipSlice Write error: " + err.Error())
+		return b.Bytes(), err
 	}
 
 	if err := gzipWriter.Flush(); err != nil {
-		panic("gzipSlice Flush error: " + err.Error())
+		return b.Bytes(), err
 	}
 
 	return b.Bytes(), nil
@@ -27,7 +27,7 @@ func gzipSlice(a []byte) ([]byte, error) {
 func ungzipSlice(a []byte) ([]byte, error) {
 	r, err := gzip.NewReader(bytes.NewBuffer(a))
 	if err != nil {
-		panic("ungzipSlice " + err.Error())
+		return nil, err
 	}
 	retval, _ := io.ReadAll(r)
 
@@ -37,15 +37,15 @@ func ungzipSlice(a []byte) ([]byte, error) {
 func TestGzip(t *testing.T) {
 	test := "there is fake string *^(^$&*^&"
 	input := []byte(test)
-	gzipped, err := gzipSlice(input)
+	gziped, err := gzipSlice(input)
 	if err != nil {
-		panic("gzipSlice " + err.Error())
+		t.Fatalf("gzipSlice: %v", err)
 	}
 
-	ungzipped, err := ungzipSlice(gzipped)
+	ungziped, err := ungzipSlice(gziped)
 	if err != nil {
-		panic("ungzipSlice: " + err.Error())
+		t.Fatalf("ungzipSlice: %v", err)
 	}
 
-	assert.True(t, strings.TrimSpace(string(input)) == strings.TrimSpace(string(ungzipped)))
+	assert.True(t, strings.TrimSpace(string(input)) == strings.TrimSpace(string(ungziped)))
 }

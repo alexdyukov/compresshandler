@@ -1,6 +1,7 @@
 package compresshandler
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 
@@ -9,31 +10,28 @@ import (
 	"github.com/klauspost/compress/zlib"
 )
 
-func wrapNetHTTPRequest(r *http.Request) (*http.Request, error) {
-	contentEncoding := r.Header.Get("Content-Encoding")
+func wrapNetHTTPRequest(req *http.Request) (*http.Request, error) {
+	var (
+		err             error
+		contentEncoding = req.Header.Get("Content-Encoding")
+	)
 
-	requestCompression := getRequestCompression([]byte(contentEncoding))
-	for i := 0; i < len(requestCompression); i += 1 {
-		switch requestCompression[i] {
-		case gzipType:
-			gzipReader, err := gzip.NewReader(r.Body)
-			if err != nil {
-				return r, err
+	for pos := 0; pos < len(contentEncoding); pos++ {
+		switch contentEncoding[pos] {
+		case 'z', 'Z': // z stands only in gzip >> gzip
+			if req.Body, err = gzip.NewReader(req.Body); err != nil {
+				return req, fmt.Errorf("compresshandler: request: failed to initialize gzip reader: %w", err)
 			}
-			r.Body = gzipReader
-		case zlibType:
-			zlibReader, err := zlib.NewReader(r.Body)
-			if err != nil {
-				return r, err
+		case 'f', 'F': // f stands only in deflate >> zlib
+			if req.Body, err = zlib.NewReader(req.Body); err != nil {
+				return req, fmt.Errorf("compresshandler: request: failed to initialize zlib reader: %w", err)
 			}
-			r.Body = zlibReader
-		case brotliType:
-			brotliReader := brotli.NewReader(r.Body)
-			r.Body = io.NopCloser(brotliReader)
-		case lzwType:
-			return r, ErrNotSupported
+		case 'b', 'B': // b stands only in br >> brotli
+			req.Body = io.NopCloser(brotli.NewReader(req.Body))
+		case 'c', 'C': // c stands only in compress >> lzw
+			return req, ErrNotSupported
 		}
 	}
 
-	return r, nil
+	return req, nil
 }
