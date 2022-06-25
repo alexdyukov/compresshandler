@@ -21,6 +21,7 @@ func reverse(s string) string {
 
 func TestNetHttp(t *testing.T) {
 	testString := "there is A test string !@#$%^&*()_+"
+	httpReturnStatusCode := http.StatusAccepted
 
 	tests := []struct {
 		name           string
@@ -47,16 +48,16 @@ func TestNetHttp(t *testing.T) {
 			name:           "gzip request zlib response",
 			acceptEncoding: "deflate",
 			requestType:    gzipType,
-			responseType:   zlibType,
+			responseType:   deflateType,
 		},
 	}
 
-	compressHandler := NewNetHTTPHandler(Config{})
+	compressHandler := NewNetHTTP(Config{})
 	revHTTP := compressHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		b, _ := io.ReadAll(r.Body)
 		input := strings.TrimSpace(string(b))
 		output := reverse(input)
-		w.WriteHeader(http.StatusAccepted)
+		w.WriteHeader(httpReturnStatusCode)
 		w.Write([]byte(output))
 	}))
 
@@ -74,7 +75,7 @@ func TestNetHttp(t *testing.T) {
 				}
 				request = httptest.NewRequest(http.MethodGet, "/", bytes.NewReader(requestBody))
 				request.Header.Set("Content-Encoding", "gzip")
-			case zlibType:
+			case deflateType:
 				requestBody, err := zlibSlice([]byte(testString))
 				if err != nil {
 					t.Fatalf("cannot initialize requestBody with zlibType: %v", err)
@@ -89,7 +90,7 @@ func TestNetHttp(t *testing.T) {
 			switch tt.responseType {
 			case gzipType:
 				request.Header.Set("Accept-Encoding", "gzip")
-			case zlibType:
+			case deflateType:
 				request.Header.Set("Accept-Encoding", "deflate")
 			default:
 				request.Header.Set("Accept-Encoding", "identity")
@@ -102,7 +103,7 @@ func TestNetHttp(t *testing.T) {
 			defer response.Body.Close()
 
 			// checks
-			assert.Equal(t, http.StatusAccepted, response.StatusCode)
+			assert.Equal(t, httpReturnStatusCode, response.StatusCode)
 
 			returnedBody, err := io.ReadAll(response.Body)
 			assert.Nil(t, err)
@@ -116,7 +117,7 @@ func TestNetHttp(t *testing.T) {
 				if err != nil {
 					t.Fatalf("cannot get uncompressed body from gziped response: %v", err)
 				}
-			case zlibType:
+			case deflateType:
 				assert.Contains(t, response.Header.Get("Content-Encoding"), "deflate")
 				uncompressedReturnBody, err = unzlibSlice(returnedBody)
 				if err != nil {

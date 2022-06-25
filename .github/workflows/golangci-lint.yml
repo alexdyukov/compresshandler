@@ -1,8 +1,6 @@
 name: lint
 on:
-  push:
-    branches-ignore:
-      - 'master'
+  push
 permissions:
   contents: read
   pull-requests: write
@@ -15,7 +13,9 @@ jobs:
         with:
           go-version: 1.18
       - uses: actions/checkout@v3
-      - name: golangci-lint
+      - name: Test
+        run: go test -v ./...
+      - name: Lint
         uses: golangci/golangci-lint-action@v3
         with:
           version: v1.46.2
