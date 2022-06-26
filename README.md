@@ -2,7 +2,7 @@
 Go compress http handler. Just fire and forget.
 ====
 [![GoDoc](https://godoc.org/github.com/alexdyukov/compresshandler?status.svg)](https://godoc.org/github.com/alexdyukov/compresshandler)
-[![CI](https://github.com/alexdyukov/compresshandler/actions/workflows/golangci-lint.yml/badge.svg?branch=master)](https://github.com/alexdyukov/compresshandler/actions/workflows/golangci-lint.yml?query=branch%3Amaster)
+[![CI](https://github.com/alexdyukov/compresshandler/actions/workflows/lint.yml/badge.svg?branch=master)](https://github.com/alexdyukov/compresshandler/actions/workflows/lint.yml?query=branch%3Amaster)
 
 Package provides methods to wrap http handler for auto decompress compressed data & auto compress response with prefered client compression.
 
