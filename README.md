@@ -4,7 +4,7 @@ Go compress http handler. Just fire and forget.
 [![GoDoc](https://godoc.org/github.com/alexdyukov/compresshandler?status.svg)](https://godoc.org/github.com/alexdyukov/compresshandler)
 [![CI](https://github.com/alexdyukov/compresshandler/actions/workflows/golangci-lint.yml/badge.svg?branch=master)](https://github.com/alexdyukov/compresshandler/actions/workflows/golangci-lint.yml?query=branch%3Amaster)
 
-Package provides methods to wrap http handler for auto decompress compressed data & compress response with prefered client compression. That is. Nothing more or nothing less.
+Package provides methods to wrap http handler for auto decompress compressed data & auto compress response with prefered client compression.
 
 ## Example
 
@@ -30,7 +30,9 @@ func main() {
                 MinContentLength: 1400,
         }
 
-        http.ListenAndServe(":8080", compresshandler.NewNetHTTP(echo))
+        compress := compresshandler.NewNetHTTP(compressConfig)
+
+        http.ListenAndServe(":8080", compress(echo))
 }
 ```
 
@@ -41,4 +43,4 @@ func main() {
 
 ## License
 
-BSD licensed. See the included LICENSE file for details.
+MIT licensed. See the included LICENSE file for details.
