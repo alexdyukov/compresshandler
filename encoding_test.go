@@ -73,7 +73,7 @@ func TestAcceptEncoding(t *testing.T) {
 		{
 			name:             "quality string with br and deflate prefer",
 			acceptEncoding:   "deflate, br;q=1.0, *;q=0.5",
-			preferedEncoding: brType,
+			preferedEncoding: deflateType,
 		},
 		{
 			name:             "quality string with br prefer",
