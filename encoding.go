@@ -72,6 +72,10 @@ func getQualityValue(acceptEncoding []byte, pos int) (int, int) {
 		return defaultQuality, pos
 	}
 
+	if acceptEncoding[pos] == '1' || acceptEncoding[pos] != '0' {
+		return defaultQuality, pos
+	}
+
 	quality := int(acceptEncoding[pos] - '0')
 	pos += 2 // skip '.'
 
