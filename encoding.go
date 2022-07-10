@@ -72,26 +72,21 @@ func getQualityValue(acceptEncoding []byte, pos int) (int, int) {
 		return defaultQuality, pos
 	}
 
-	if acceptEncoding[pos] == '1' || acceptEncoding[pos] != '0' {
-		return defaultQuality, pos
-	}
+	quality := int(acceptEncoding[pos] - '0')
+	pos += 2 // skip '.'
 
-	quality := 0
-	pos += 2 // "0."
-
-	for pos < len(acceptEncoding) && acceptEncoding[pos] >= '0' && acceptEncoding[pos] <= '9' {
-		quality = 10*quality + int(acceptEncoding[pos]-'0')
-		pos++
-	}
-
-	for quality < 100 {
+	for i := 0; i < 3; i++ {
 		quality *= 10
+		if pos < len(acceptEncoding) && isDigit(acceptEncoding[pos]) {
+			quality += int(acceptEncoding[pos] - '0')
+			pos++
+		}
 	}
 
 	return quality, pos
 }
 
-func getNextAcceptEncodingTypeAndQuality(acceptEncoding []byte, start int) (int, int, int) {
+func getNextInAcceptEncoding(acceptEncoding []byte, start int) (int, int, int) {
 	for start < len(acceptEncoding) && !isAlpha(acceptEncoding[start]) {
 		start++
 	}
@@ -112,7 +107,7 @@ func getPreferedCompression(acceptEncoding []byte) int {
 	qualityValue := 0
 
 	for contentType, pos := 0, 0; pos < len(acceptEncoding); pos++ {
-		contentType, qualityValue, pos = getNextAcceptEncodingTypeAndQuality(acceptEncoding, pos)
+		contentType, qualityValue, pos = getNextInAcceptEncoding(acceptEncoding, pos)
 
 		if contentType != unknownType {
 			parsedQualities[contentType] = qualityValue
