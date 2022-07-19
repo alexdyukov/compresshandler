@@ -7,7 +7,9 @@ run:
 linters:
   enable-all: true
   disable:
-    - revive #TODO
+    - funlen
+    - dupl
+    - revive
 
 linters-settings:
   errcheck:
@@ -33,14 +35,11 @@ linters-settings:
   exhaustive:
     check-generated: true
     default-signifies-exhaustive: true
-  funlen:
-    lines: 40
-    statements: 20
   gci:
     no-inline-comments: true
     no-prefix-comments: true
   gocognit:
-    min-complexity: 15
+    min-complexity: 40
   gocritic:
     enabled-tags:
       - diagnostic
@@ -62,6 +61,7 @@ linters-settings:
   gomnd:
     ignored-numbers:
       - '10'
+      - '2'
   gomoddirectives:
     replace-local: true
   gosec:
@@ -91,3 +91,6 @@ linters-settings:
   whitespace:
     multi-if: true
     multi-func: true
+  cyclop:
+    max-complexity: 15
+    package-average: 10

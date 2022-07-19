@@ -1,4 +1,4 @@
-package compresshandler
+package compresshandler_test
 
 import (
 	"bytes"
@@ -8,6 +8,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/alexdyukov/compresshandler"
+	"github.com/alexdyukov/compresshandler/internal/compressors"
+	"github.com/alexdyukov/compresshandler/internal/decompressors"
+	"github.com/alexdyukov/compresshandler/internal/encoding"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -20,8 +24,21 @@ func reverse(s string) string {
 }
 
 func TestNetHttp(t *testing.T) {
-	testString := "there is A test string !@#$%^&*()_+"
-	httpReturnStatusCode := http.StatusAccepted
+	var (
+		availableCompressors map[int]compressors.Compressor = map[int]compressors.Compressor{
+			encoding.BrType:      compressors.NewBrotli(),
+			encoding.GzipType:    compressors.NewGzip(),
+			encoding.DeflateType: compressors.NewZlib(),
+		}
+		availableDecompressors map[int]decompressors.Decompressor = map[int]decompressors.Decompressor{
+			encoding.BrType:      decompressors.NewBrotli(),
+			encoding.GzipType:    decompressors.NewGzip(),
+			encoding.DeflateType: decompressors.NewZlib(),
+		}
+		testString           = "there is A test string !@#$%^&*()_+"
+		httpReturnStatusCode = http.StatusAccepted
+		testCompressLevel    = 6
+	)
 
 	tests := []struct {
 		name           string
@@ -32,28 +49,28 @@ func TestNetHttp(t *testing.T) {
 		{
 			name:           "vanilla request vanilla response",
 			acceptEncoding: " ",
-			requestType:    identityType,
-			responseType:   identityType,
+			requestType:    encoding.IdentityType,
+			responseType:   encoding.IdentityType,
 		}, {
 			name:           "vanilla request gzip response",
 			acceptEncoding: "gzip",
-			requestType:    identityType,
-			responseType:   gzipType,
+			requestType:    encoding.IdentityType,
+			responseType:   encoding.GzipType,
 		}, {
 			name:           "gzip request vanilla response",
 			acceptEncoding: "identity",
-			requestType:    gzipType,
-			responseType:   identityType,
+			requestType:    encoding.GzipType,
+			responseType:   encoding.IdentityType,
 		}, {
 			name:           "gzip request zlib response",
 			acceptEncoding: "deflate",
-			requestType:    gzipType,
-			responseType:   deflateType,
+			requestType:    encoding.GzipType,
+			responseType:   encoding.DeflateType,
 		},
 	}
 
-	compressHandler := NewNetHTTP(Config{})
-	revHTTP := compressHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	compress := compresshandler.NewNetHTTP(compresshandler.Config{})
+	revHTTP := compress(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		b, _ := io.ReadAll(r.Body)
 		input := strings.TrimSpace(string(b))
 		output := reverse(input)
@@ -61,73 +78,68 @@ func TestNetHttp(t *testing.T) {
 		w.Write([]byte(output))
 	}))
 
-	// run tests
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// request
-			var request *http.Request
+	for _, test := range tests {
+		test := test
 
-			switch tt.requestType {
-			case gzipType:
-				requestBody, err := gzipSlice([]byte(testString))
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			requestBody := &bytes.Buffer{}
+
+			reader := bytes.NewBufferString(testString)
+			compressor, needCompress := availableCompressors[test.requestType]
+			if !needCompress {
+				requestBody.ReadFrom(reader)
+			} else {
+				err := compressor.Compress(testCompressLevel, requestBody, reader)
 				if err != nil {
-					t.Fatalf("cannot initialize requestBody with gzipType: %v", err)
+					t.Fatalf("cannot Compress requestBody with encodingType (%v): %v", test.requestType, err)
 				}
-				request = httptest.NewRequest(http.MethodGet, "/", bytes.NewReader(requestBody))
+			}
+
+			request := httptest.NewRequest(http.MethodPost, "/", requestBody)
+
+			switch test.requestType {
+			case encoding.GzipType:
 				request.Header.Set("Content-Encoding", "gzip")
-			case deflateType:
-				requestBody, err := zlibSlice([]byte(testString))
-				if err != nil {
-					t.Fatalf("cannot initialize requestBody with zlibType: %v", err)
-				}
-				request = httptest.NewRequest(http.MethodGet, "/", bytes.NewReader(requestBody))
+			case encoding.DeflateType:
 				request.Header.Set("Content-Encoding", "deflate")
-			default: // identityType
-				requestBody := []byte(testString)
-				request = httptest.NewRequest(http.MethodGet, "/", bytes.NewReader(requestBody))
+			case encoding.BrType:
+				request.Header.Set("Content-Encoding", "br")
 			}
 
-			switch tt.responseType {
-			case gzipType:
-				request.Header.Set("Accept-Encoding", "gzip")
-			case deflateType:
-				request.Header.Set("Accept-Encoding", "deflate")
-			default:
-				request.Header.Set("Accept-Encoding", "identity")
-			}
+			request.Header.Set("Accept-Encoding", test.acceptEncoding)
 
-			// response
 			recorder := httptest.NewRecorder()
 			revHTTP.ServeHTTP(recorder, request)
 			response := recorder.Result()
 			defer response.Body.Close()
 
-			// checks
 			assert.Equal(t, httpReturnStatusCode, response.StatusCode)
 
-			returnedBody, err := io.ReadAll(response.Body)
-			assert.Nil(t, err)
+			cleanedResponseBody := &bytes.Buffer{}
 
-			var uncompressedReturnBody []byte
-
-			switch tt.responseType {
-			case gzipType:
-				assert.Contains(t, response.Header.Get("Content-Encoding"), "gzip")
-				uncompressedReturnBody, err = ungzipSlice(returnedBody)
+			decompressor, needDecompress := availableDecompressors[test.responseType]
+			if !needDecompress {
+				cleanedResponseBody.ReadFrom(response.Body)
+			} else {
+				err := decompressor.Decompress(cleanedResponseBody, response.Body)
 				if err != nil {
-					t.Fatalf("cannot get uncompressed body from gziped response: %v", err)
+					t.Fatalf("cannot Decompress response.Body with encodingType (%v): %v", test.responseType, err)
 				}
-			case deflateType:
-				assert.Contains(t, response.Header.Get("Content-Encoding"), "deflate")
-				uncompressedReturnBody, err = unzlibSlice(returnedBody)
-				if err != nil {
-					t.Fatalf("cannot get uncompressed body from zlibbed response: %v", err)
-				}
-			default:
-				uncompressedReturnBody = returnedBody
 			}
 
-			assert.True(t, strings.TrimSpace(string(uncompressedReturnBody)) == reverse(testString))
+			responseContentEncoding := response.Header.Get("Content-Encoding")
+			switch test.responseType {
+			case encoding.GzipType:
+				assert.Contains(t, responseContentEncoding, "gzip")
+			case encoding.DeflateType:
+				assert.Contains(t, responseContentEncoding, "deflate")
+			case encoding.BrType:
+				assert.Contains(t, responseContentEncoding, "br")
+			}
+
+			assert.True(t, strings.TrimSpace(string(cleanedResponseBody.Bytes())) == reverse(testString))
 		})
 	}
 }
