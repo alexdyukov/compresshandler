@@ -35,9 +35,9 @@ func TestGzip(t *testing.T) {
 	gziped := &bytes.Buffer{}
 	ungziped := &bytes.Buffer{}
 
-	compressor := compressors.NewGzip()
+	compressor := compressors.NewGzip((gzip.BestCompression - gzip.BestSpeed) / 2)
 
-	if err := compressor.Compress((gzip.BestCompression-gzip.BestSpeed)/2, gziped, testInput); err != nil {
+	if err := compressor.Compress(gziped, testInput); err != nil {
 		t.Fatalf("TestGzipCompression: Compress: %v of type %T", err, err)
 	}
 
@@ -51,13 +51,12 @@ func TestGzip(t *testing.T) {
 func BenchmarkGzipCompressor(b *testing.B) {
 	testInput := bytes.NewBufferString("there is fake string *^(^$&*^&")
 	gziped := &bytes.Buffer{}
-	compressor := compressors.NewGzip()
-	level := (gzip.BestCompression - gzip.BestSpeed) / 2
+	compressor := compressors.NewGzip((gzip.BestCompression - gzip.BestSpeed) / 2)
 
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		if err := compressor.Compress(level, gziped, testInput); err != nil {
+		if err := compressor.Compress(gziped, testInput); err != nil {
 			b.FailNow()
 		}
 

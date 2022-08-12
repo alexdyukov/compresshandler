@@ -32,9 +32,9 @@ func TestBrotli(t *testing.T) {
 	brotlied := &bytes.Buffer{}
 	unbrotlied := &bytes.Buffer{}
 
-	compressor := compressors.NewBrotli()
+	compressor := compressors.NewBrotli((brotli.BestCompression - brotli.BestSpeed) / 2)
 
-	if err := compressor.Compress((brotli.BestCompression-brotli.BestSpeed)/2, brotlied, testInput); err != nil {
+	if err := compressor.Compress(brotlied, testInput); err != nil {
 		t.Fatalf("TestBrotliCompression: Compress: %v of type %T", err, err)
 	}
 
@@ -48,13 +48,12 @@ func TestBrotli(t *testing.T) {
 func BenchmarkBrotli(b *testing.B) {
 	testInput := bytes.NewBufferString("there is fake string *^(^$&*^&")
 	brotlied := &bytes.Buffer{}
-	compressor := compressors.NewBrotli()
-	level := (brotli.BestCompression - brotli.BestSpeed) / 2
+	compressor := compressors.NewBrotli((brotli.BestCompression - brotli.BestSpeed) / 2)
 
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		if err := compressor.Compress(level, brotlied, testInput); err != nil {
+		if err := compressor.Compress(brotlied, testInput); err != nil {
 			b.FailNow()
 		}
 

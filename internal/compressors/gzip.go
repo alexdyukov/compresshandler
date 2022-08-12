@@ -9,37 +9,30 @@ import (
 	"github.com/klauspost/compress/gzip"
 )
 
-type Gzip [gzip.BestCompression - gzip.BestSpeed]*sync.Pool
-
-func NewGzip() *Gzip {
-	var compressor Gzip
-
-	for i := range compressor {
-		i := i
-		compressor[i] = &sync.Pool{
-			New: func() interface{} {
-				writer, err := gzip.NewWriterLevel(&bytes.Buffer{}, i)
-				if err != nil {
-					panic("unreachable code")
-				}
-
-				return writer
-			},
-		}
-	}
-
-	return &compressor
+type Gzip struct {
+	sync.Pool
 }
 
-func (compressor *Gzip) Compress(level int, target io.Writer, from *bytes.Buffer) error {
-	pool := compressor[level-gzip.BestSpeed]
+func NewGzip(level int) *Gzip {
+	return &Gzip{sync.Pool{
+		New: func() interface{} {
+			writer, err := gzip.NewWriterLevel(&bytes.Buffer{}, level)
+			if err != nil {
+				panic("unreachable code")
+			}
 
-	writer, ok := pool.Get().(*gzip.Writer)
+			return writer
+		},
+	}}
+}
+
+func (compressorPool *Gzip) Compress(target io.Writer, from *bytes.Buffer) error {
+	writer, ok := compressorPool.Get().(*gzip.Writer)
 	if !ok {
 		panic("unreachable code")
 	}
 
-	defer pool.Put(writer)
+	defer compressorPool.Put(writer)
 
 	writer.Reset(target)
 

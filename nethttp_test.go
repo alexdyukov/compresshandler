@@ -12,6 +12,9 @@ import (
 	"github.com/alexdyukov/compresshandler/internal/compressors"
 	"github.com/alexdyukov/compresshandler/internal/decompressors"
 	"github.com/alexdyukov/compresshandler/internal/encoding"
+	"github.com/andybalholm/brotli"
+	"github.com/klauspost/compress/gzip"
+	"github.com/klauspost/compress/zlib"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -26,9 +29,9 @@ func reverse(s string) string {
 func TestNetHttp(t *testing.T) {
 	var (
 		availableCompressors map[int]compressors.Compressor = map[int]compressors.Compressor{
-			encoding.BrType:      compressors.NewBrotli(),
-			encoding.GzipType:    compressors.NewGzip(),
-			encoding.DeflateType: compressors.NewZlib(),
+			encoding.BrType:      compressors.NewBrotli((brotli.BestCompression - brotli.BestSpeed) / 2),
+			encoding.GzipType:    compressors.NewGzip((gzip.BestCompression - gzip.BestSpeed) / 2),
+			encoding.DeflateType: compressors.NewZlib((zlib.BestCompression - zlib.BestSpeed) / 2),
 		}
 		availableDecompressors map[int]decompressors.Decompressor = map[int]decompressors.Decompressor{
 			encoding.BrType:      decompressors.NewBrotli(),
@@ -37,7 +40,6 @@ func TestNetHttp(t *testing.T) {
 		}
 		testString           = "there is A test string !@#$%^&*()_+"
 		httpReturnStatusCode = http.StatusAccepted
-		testCompressLevel    = 6
 	)
 
 	tests := []struct {
@@ -91,7 +93,7 @@ func TestNetHttp(t *testing.T) {
 			if !needCompress {
 				requestBody.ReadFrom(reader)
 			} else {
-				err := compressor.Compress(testCompressLevel, requestBody, reader)
+				err := compressor.Compress(requestBody, reader)
 				if err != nil {
 					t.Fatalf("cannot Compress requestBody with encodingType (%v): %v", test.requestType, err)
 				}

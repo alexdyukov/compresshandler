@@ -1,7 +1,6 @@
 package compresshandler
 
 import (
-	"github.com/alexdyukov/compresshandler/internal/encoding"
 	"github.com/andybalholm/brotli"
 	"github.com/klauspost/compress/gzip"
 	"github.com/klauspost/compress/zlib"
@@ -29,13 +28,5 @@ func (cfg *Config) fix() {
 
 	if cfg.MinContentLength < 0 {
 		cfg.MinContentLength = 0
-	}
-}
-
-func (cfg *Config) getLevels() map[int]int {
-	return map[int]int{
-		encoding.GzipType:    cfg.GzipLevel,
-		encoding.DeflateType: cfg.ZlibLevel,
-		encoding.BrType:      cfg.BrotliLevel,
 	}
 }
