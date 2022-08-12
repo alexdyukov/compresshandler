@@ -9,32 +9,25 @@ import (
 	"github.com/andybalholm/brotli"
 )
 
-type Brotli [brotli.BestCompression - brotli.BestSpeed]*sync.Pool
-
-func NewBrotli() *Brotli {
-	var compressor Brotli
-
-	for i := range compressor {
-		i := i
-		compressor[i] = &sync.Pool{
-			New: func() interface{} {
-				return brotli.NewWriterLevel(&bytes.Buffer{}, i)
-			},
-		}
-	}
-
-	return &compressor
+type Brotli struct {
+	sync.Pool
 }
 
-func (compressor *Brotli) Compress(level int, target io.Writer, from *bytes.Buffer) error {
-	pool := compressor[level-brotli.BestSpeed]
+func NewBrotli(level int) *Brotli {
+	return &Brotli{sync.Pool{
+		New: func() interface{} {
+			return brotli.NewWriterLevel(&bytes.Buffer{}, level)
+		},
+	}}
+}
 
-	writer, ok := pool.Get().(*brotli.Writer)
+func (compressorPool *Brotli) Compress(target io.Writer, from *bytes.Buffer) error {
+	writer, ok := compressorPool.Get().(*brotli.Writer)
 	if !ok {
 		panic("unreachable code")
 	}
 
-	defer pool.Put(writer)
+	defer compressorPool.Put(writer)
 
 	writer.Reset(target)
 

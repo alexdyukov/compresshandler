@@ -38,9 +38,40 @@ func main() {
 
 ## TODOs
 
-* fasthttp and any other handler
-* Configurable content response type. We dont need to zip already zipped image or archives
-
+* fasthttp handler
+* gin handler
+* configurable content response type. We dont need to zip already zipped image or archives:
+```
+https://www.iana.org/assignments/media-types/media-types.xhtml
+# default should be:
+application/*json
+application/*xml
+application/*json
+*javascript
+*ecmascript
+```
+* found out better brotli implementation :
+```
+$ GOMAXPROCS=8 go test -bench='Bench' -benchmem -benchtime=100000x ./internal/{de,}compressors/
+goos: linux
+goarch: amd64
+pkg: github.com/alexdyukov/compresshandler/internal/decompressors
+cpu: AMD Ryzen 7 5800U with Radeon Graphics
+BenchmarkBrotli-8         100000              3861 ns/op           24221 B/op         11 allocs/op
+BenchmarkGzip-8           100000               323.9 ns/op            16 B/op          1 allocs/op
+BenchmarkZlib-8           100000               305.2 ns/op            16 B/op          1 allocs/op
+PASS
+ok      github.com/alexdyukov/compresshandler/internal/decompressors    0.459s
+goos: linux
+goarch: amd64
+pkg: github.com/alexdyukov/compresshandler/internal/compressors
+cpu: AMD Ryzen 7 5800U with Radeon Graphics
+BenchmarkBrotli-8                 100000             13012 ns/op              11 B/op          0 allocs/op
+BenchmarkGzipCompressor-8         100000               118.7 ns/op             9 B/op          0 allocs/op
+BenchmarkZlib-8                   100000               108.8 ns/op             9 B/op          0 allocs/op
+PASS
+ok      github.com/alexdyukov/compresshandler/internal/compressors      1.332s
+```
 ## License
 
 MIT licensed. See the included LICENSE file for details.

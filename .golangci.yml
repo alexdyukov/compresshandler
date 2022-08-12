@@ -39,7 +39,7 @@ linters-settings:
     no-inline-comments: true
     no-prefix-comments: true
   gocognit:
-    min-complexity: 40
+    min-complexity: 15
   gocritic:
     enabled-tags:
       - diagnostic
@@ -91,6 +91,3 @@ linters-settings:
   whitespace:
     multi-if: true
     multi-func: true
-  cyclop:
-    max-complexity: 15
-    package-average: 10

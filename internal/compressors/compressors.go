@@ -6,5 +6,5 @@ import (
 )
 
 type Compressor interface {
-	Compress(level int, to io.Writer, from *bytes.Buffer) error
+	Compress(to io.Writer, from *bytes.Buffer) error
 }

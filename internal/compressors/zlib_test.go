@@ -35,9 +35,9 @@ func TestZlib(t *testing.T) {
 	zlibed := &bytes.Buffer{}
 	unzlibed := &bytes.Buffer{}
 
-	compressor := compressors.NewZlib()
+	compressor := compressors.NewZlib((zlib.BestCompression - zlib.BestSpeed) / 2)
 
-	if err := compressor.Compress((zlib.BestCompression-zlib.BestSpeed)/2, zlibed, testInput); err != nil {
+	if err := compressor.Compress(zlibed, testInput); err != nil {
 		t.Fatalf("TestZlibCompression: Compress: %v of type %T", err, err)
 	}
 
@@ -51,13 +51,12 @@ func TestZlib(t *testing.T) {
 func BenchmarkZlib(b *testing.B) {
 	testInput := bytes.NewBufferString("there is fake string *^(^$&*^&")
 	zlibed := &bytes.Buffer{}
-	compressor := compressors.NewZlib()
-	level := (zlib.BestCompression - zlib.BestSpeed) / 2
+	compressor := compressors.NewZlib((zlib.BestCompression - zlib.BestSpeed) / 2)
 
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		if err := compressor.Compress(level, zlibed, testInput); err != nil {
+		if err := compressor.Compress(zlibed, testInput); err != nil {
 			b.FailNow()
 		}
 

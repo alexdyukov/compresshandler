@@ -16,5 +16,3 @@ jobs:
         run: go test -v ./...
       - name: Lint
         uses: golangci/golangci-lint-action@v3
-        with:
-          version: v1.47.2
