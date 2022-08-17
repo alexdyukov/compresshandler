@@ -1,4 +1,4 @@
-package compressors
+package compressor
 
 import (
 	"bytes"
@@ -13,6 +13,11 @@ type Brotli struct {
 	sync.Pool
 }
 
+const (
+	BrotliBestCompression = brotli.BestCompression
+	BrotliBestSpeed       = brotli.BestSpeed
+)
+
 func NewBrotli(level int) *Brotli {
 	return &Brotli{sync.Pool{
 		New: func() interface{} {
@@ -21,7 +26,7 @@ func NewBrotli(level int) *Brotli {
 	}}
 }
 
-func (compressorPool *Brotli) Compress(target io.Writer, from *bytes.Buffer) error {
+func (compressorPool *Brotli) Compress(target io.Writer, from []byte) error {
 	writer, ok := compressorPool.Get().(*brotli.Writer)
 	if !ok {
 		panic("unreachable code")
@@ -31,12 +36,12 @@ func (compressorPool *Brotli) Compress(target io.Writer, from *bytes.Buffer) err
 
 	writer.Reset(target)
 
-	if _, err := writer.Write(from.Bytes()); err != nil {
-		return fmt.Errorf("compressors: brotli: failed to write data: %w", err)
+	if _, err := writer.Write(from); err != nil {
+		return fmt.Errorf("compressor: brotli: failed to write data: %w", err)
 	}
 
 	if err := writer.Flush(); err != nil {
-		return fmt.Errorf("compressors: brotli: failed to flush data: %w", err)
+		return fmt.Errorf("compressor: brotli: failed to flush data: %w", err)
 	}
 
 	return nil

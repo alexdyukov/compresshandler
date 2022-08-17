@@ -1,4 +1,4 @@
-package compressors
+package compressor
 
 import (
 	"bytes"
@@ -13,6 +13,11 @@ type Zlib struct {
 	sync.Pool
 }
 
+const (
+	ZlibBestCompression = zlib.BestCompression
+	ZlibBestSpeed       = zlib.BestSpeed
+)
+
 func NewZlib(level int) *Zlib {
 	return &Zlib{sync.Pool{
 		New: func() interface{} {
@@ -26,7 +31,7 @@ func NewZlib(level int) *Zlib {
 	}}
 }
 
-func (compressorPool *Zlib) Compress(target io.Writer, from *bytes.Buffer) error {
+func (compressorPool *Zlib) Compress(target io.Writer, from []byte) error {
 	writer, ok := compressorPool.Get().(*zlib.Writer)
 	if !ok {
 		panic("unreachable code")
@@ -36,12 +41,12 @@ func (compressorPool *Zlib) Compress(target io.Writer, from *bytes.Buffer) error
 
 	writer.Reset(target)
 
-	if _, err := writer.Write(from.Bytes()); err != nil {
-		return fmt.Errorf("compressors: zlib: failed to write data: %w", err)
+	if _, err := writer.Write(from); err != nil {
+		return fmt.Errorf("compressor: zlib: failed to write data: %w", err)
 	}
 
 	if err := writer.Flush(); err != nil {
-		return fmt.Errorf("compressors: zlib: failed to flush data: %w", err)
+		return fmt.Errorf("compressor: zlib: failed to flush data: %w", err)
 	}
 
 	return nil

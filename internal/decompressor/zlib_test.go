@@ -1,4 +1,4 @@
-package decompressors_test
+package decompressor_test
 
 import (
 	"bytes"
@@ -8,22 +8,22 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/alexdyukov/compresshandler/internal/decompressors"
+	"github.com/alexdyukov/compresshandler/internal/decompressor"
 	"github.com/stretchr/testify/assert"
 )
 
 func stdZlibCompress(level int, target io.Writer, from *bytes.Buffer) error {
 	writer, err := zlib.NewWriterLevel(target, level)
 	if err != nil {
-		return fmt.Errorf("decompressors: zlib_test: failed to initialize writer: %w", err)
+		return fmt.Errorf("decompressor: zlib_test: failed to initialize writer: %w", err)
 	}
 
 	if _, err := writer.Write(from.Bytes()); err != nil {
-		return fmt.Errorf("decompressors: zlib_test: failed to write data: %w", err)
+		return fmt.Errorf("decompressor: zlib_test: failed to write data: %w", err)
 	}
 
 	if err := writer.Flush(); err != nil {
-		return fmt.Errorf("decompressors: zlib_test: failed to flush data: %w", err)
+		return fmt.Errorf("decompressor: zlib_test: failed to flush data: %w", err)
 	}
 
 	return nil
@@ -37,7 +37,7 @@ func TestZlib(t *testing.T) {
 	zlibed := &bytes.Buffer{}
 	unzlibed := &bytes.Buffer{}
 
-	decompressor := decompressors.NewZlib()
+	decompressor := decompressor.NewZlib()
 
 	if err := stdZlibCompress((zlib.BestCompression-zlib.BestSpeed)/2, zlibed, testInput); err != nil {
 		t.Fatalf("TestZlibDecompression: stdZlibCompress: %v of type %T", err, err)
@@ -54,7 +54,7 @@ func BenchmarkZlib(b *testing.B) {
 	testInput := bytes.NewBufferString("there is fake string *^(^$&*^&")
 	zlibed := &bytes.Buffer{}
 	unzlibed := &bytes.Buffer{}
-	decompressor := decompressors.NewZlib()
+	decompressor := decompressor.NewZlib()
 	level := (zlib.BestCompression - zlib.BestSpeed) / 2
 
 	if err := stdZlibCompress(level, zlibed, testInput); err != nil {

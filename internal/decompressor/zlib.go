@@ -1,4 +1,4 @@
-package decompressors
+package decompressor
 
 import (
 	"bytes"
@@ -64,12 +64,12 @@ func (decompressor *Zlib) Decompress(target *bytes.Buffer, from io.Reader) error
 	defer decompressor.Put(reader)
 
 	if err := reader.Reset(from, nil); err != nil {
-		return fmt.Errorf("decompressors: zlib: failed to initialize reader from pool: %w", err)
+		return fmt.Errorf("decompressor: zlib: failed to initialize reader from pool: %w", err)
 	}
 
 	_, err := target.ReadFrom(reader)
 	if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) {
-		return fmt.Errorf("decompressors: zlib: failed to decompress data: %w", err)
+		return fmt.Errorf("decompressor: zlib: failed to decompress data: %w", err)
 	}
 
 	return nil

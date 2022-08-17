@@ -1,4 +1,4 @@
-package compressors
+package compressor
 
 import (
 	"bytes"
@@ -13,6 +13,11 @@ type Gzip struct {
 	sync.Pool
 }
 
+const (
+	GzipBestCompression = gzip.BestCompression
+	GzipBestSpeed       = gzip.BestSpeed
+)
+
 func NewGzip(level int) *Gzip {
 	return &Gzip{sync.Pool{
 		New: func() interface{} {
@@ -26,7 +31,7 @@ func NewGzip(level int) *Gzip {
 	}}
 }
 
-func (compressorPool *Gzip) Compress(target io.Writer, from *bytes.Buffer) error {
+func (compressorPool *Gzip) Compress(target io.Writer, from []byte) error {
 	writer, ok := compressorPool.Get().(*gzip.Writer)
 	if !ok {
 		panic("unreachable code")
@@ -36,12 +41,12 @@ func (compressorPool *Gzip) Compress(target io.Writer, from *bytes.Buffer) error
 
 	writer.Reset(target)
 
-	if _, err := writer.Write(from.Bytes()); err != nil {
-		return fmt.Errorf("compressors: gzip: failed to write data: %w", err)
+	if _, err := writer.Write(from); err != nil {
+		return fmt.Errorf("compressor: gzip: failed to write data: %w", err)
 	}
 
 	if err := writer.Flush(); err != nil {
-		return fmt.Errorf("compressors: gzip: failed to flush data: %w", err)
+		return fmt.Errorf("compressor: gzip: failed to flush data: %w", err)
 	}
 
 	return nil

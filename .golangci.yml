@@ -91,3 +91,5 @@ linters-settings:
   whitespace:
     multi-if: true
     multi-func: true
+  lll:
+    line-length: 135

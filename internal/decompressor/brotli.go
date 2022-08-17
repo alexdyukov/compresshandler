@@ -1,4 +1,4 @@
-package decompressors
+package decompressor
 
 import (
 	"bytes"
@@ -45,12 +45,12 @@ func (decompressor *Brotli) Decompress(target *bytes.Buffer, from io.Reader) err
 	defer decompressor.Put(reader)
 
 	if err := reader.Reset(from); err != nil {
-		return fmt.Errorf("decompressors: brotli: failed to initialize reader from pool: %w", err)
+		return fmt.Errorf("decompressor: brotli: failed to initialize reader from pool: %w", err)
 	}
 
 	_, err := target.ReadFrom(reader)
 	if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) {
-		return fmt.Errorf("decompressors: brotli: failed to decompress data: %w", err)
+		return fmt.Errorf("decompressor: brotli: failed to decompress data: %w", err)
 	}
 
 	return nil

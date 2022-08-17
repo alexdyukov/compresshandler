@@ -2,33 +2,46 @@ package compresshandler_test
 
 import (
 	"bytes"
-	"io"
-	"net/http"
-	"net/http/httptest"
+	"net"
 	"strings"
 	"testing"
 
 	"github.com/alexdyukov/compresshandler"
 	"github.com/alexdyukov/compresshandler/internal/encoding"
 	"github.com/stretchr/testify/assert"
+	"github.com/valyala/fasthttp"
+	"github.com/valyala/fasthttp/fasthttputil"
 )
 
-func TestNetHttp(t *testing.T) {
-	compress := compresshandler.NewNetHTTP(compresshandler.Config{})
-	revNetHTTP := compress(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		b, _ := io.ReadAll(r.Body)
-		input := strings.TrimSpace(string(b))
+func TestFastHttp(t *testing.T) {
+	compress := compresshandler.NewFastHTTP(compresshandler.Config{})
+	revFastHTTP := compress(func(ctx *fasthttp.RequestCtx) {
+		input := strings.TrimSpace(string(ctx.Request.Body()))
 		output := reverse(input)
-		w.WriteHeader(netHTTPReturnStatusCode)
-		w.Write([]byte(output))
-	}))
+		ctx.SetStatusCode(fastHTTPReturnStatusCode)
+		ctx.SetBodyString(output)
+	})
+
+	listener := fasthttputil.NewInmemoryListener()
+	defer listener.Close()
+
+	go func() {
+		err := fasthttp.Serve(listener, revFastHTTP)
+		if err != nil {
+			panic(err)
+		}
+	}()
+
+	httpClient := fasthttp.Client{
+		Dial: func(addr string) (net.Conn, error) {
+			return listener.Dial()
+		},
+	}
 
 	for _, test := range tests {
 		test := test
 
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
-
 			requestBody := &bytes.Buffer{}
 
 			comp, needCompress := comps[test.requestType]
@@ -41,7 +54,10 @@ func TestNetHttp(t *testing.T) {
 				}
 			}
 
-			request := httptest.NewRequest(http.MethodPost, "/", requestBody)
+			request := fasthttp.AcquireRequest()
+			request.SetHost("test")
+			request.Header.SetMethod(fasthttp.MethodPost)
+			request.SetBody(requestBody.Bytes())
 
 			switch test.requestType {
 			case encoding.GzipType:
@@ -54,26 +70,30 @@ func TestNetHttp(t *testing.T) {
 
 			request.Header.Set("Accept-Encoding", test.acceptEncoding)
 
-			recorder := httptest.NewRecorder()
-			revNetHTTP.ServeHTTP(recorder, request)
-			response := recorder.Result()
-			defer response.Body.Close()
+			response := fasthttp.AcquireResponse()
+			defer fasthttp.ReleaseResponse(response)
 
-			assert.Equal(t, netHTTPReturnStatusCode, response.StatusCode)
+			err := httpClient.Do(request, response)
+			if err != nil {
+				t.Fatalf("cannot make http request to compress handler: %v", err)
+			}
+
+			assert.Equal(t, fastHTTPReturnStatusCode, response.StatusCode())
 
 			cleanedResponseBody := &bytes.Buffer{}
+			responseBody := bytes.NewReader(response.Body())
 
 			decomp, needDecompress := decomps[test.responseType]
 			if !needDecompress {
-				cleanedResponseBody.ReadFrom(response.Body)
+				cleanedResponseBody.ReadFrom(responseBody)
 			} else {
-				err := decomp.Decompress(cleanedResponseBody, response.Body)
+				err := decomp.Decompress(cleanedResponseBody, responseBody)
 				if err != nil {
 					t.Fatalf("cannot Decompress response.Body with encodingType (%v): %v", test.responseType, err)
 				}
 			}
 
-			responseContentEncoding := response.Header.Get("Content-Encoding")
+			responseContentEncoding := string(response.Header.Peek("Content-Encoding"))
 			switch test.responseType {
 			case encoding.GzipType:
 				assert.Contains(t, responseContentEncoding, "gzip")

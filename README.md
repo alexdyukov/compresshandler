@@ -13,9 +13,6 @@ import (
         "net/http"
 
         "github.com/alexdyukov/compresshandler"
-        "github.com/klauspost/compress/gzip"
-        "github.com/klauspost/compress/zlib"
-        "github.com/andybalholm/brotli"
 )
 
 func main() {
@@ -24,9 +21,9 @@ func main() {
         })
 
         compressConfig := compresshandler.Config{
-                GzipLevel:        gzip.DefaultCompression,
-                ZlibLevel:        zlib.DefaultCompression,
-                BrotliLevel:      brotli.DefaultCompression,
+                GzipLevel:        compresshandler.GzipDefaultCompression,
+                ZlibLevel:        compresshandler.ZlibDefaultCompression,
+                BrotliLevel:      compresshandler.BrotliDefaultCompression,
                 MinContentLength: 1400,
         }
 
@@ -38,7 +35,6 @@ func main() {
 
 ## TODOs
 
-* fasthttp handler
 * gin handler
 * configurable content response type. We dont need to zip already zipped image or archives:
 ```
@@ -52,25 +48,25 @@ application/*json
 ```
 * found out better brotli implementation :
 ```
-$ GOMAXPROCS=8 go test -bench='Bench' -benchmem -benchtime=100000x ./internal/{de,}compressors/
+$ GOMAXPROCS=8 go test -bench='Bench' -benchmem -benchtime=100000x ./internal/{de,}compressor/
 goos: linux
 goarch: amd64
-pkg: github.com/alexdyukov/compresshandler/internal/decompressors
+pkg: github.com/alexdyukov/compresshandler/internal/decompressor
 cpu: AMD Ryzen 7 5800U with Radeon Graphics
 BenchmarkBrotli-8         100000              3861 ns/op           24221 B/op         11 allocs/op
 BenchmarkGzip-8           100000               323.9 ns/op            16 B/op          1 allocs/op
 BenchmarkZlib-8           100000               305.2 ns/op            16 B/op          1 allocs/op
 PASS
-ok      github.com/alexdyukov/compresshandler/internal/decompressors    0.459s
+ok      github.com/alexdyukov/compresshandler/internal/decompressor    0.459s
 goos: linux
 goarch: amd64
-pkg: github.com/alexdyukov/compresshandler/internal/compressors
+pkg: github.com/alexdyukov/compresshandler/internal/compressor
 cpu: AMD Ryzen 7 5800U with Radeon Graphics
 BenchmarkBrotli-8                 100000             13012 ns/op              11 B/op          0 allocs/op
 BenchmarkGzipCompressor-8         100000               118.7 ns/op             9 B/op          0 allocs/op
 BenchmarkZlib-8                   100000               108.8 ns/op             9 B/op          0 allocs/op
 PASS
-ok      github.com/alexdyukov/compresshandler/internal/compressors      1.332s
+ok      github.com/alexdyukov/compresshandler/internal/compressor      1.332s
 ```
 ## License
 
