@@ -1,4 +1,4 @@
-package decompressors_test
+package decompressor_test
 
 import (
 	"bytes"
@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/alexdyukov/compresshandler/internal/decompressors"
+	"github.com/alexdyukov/compresshandler/internal/decompressor"
 	"github.com/andybalholm/brotli"
 	"github.com/stretchr/testify/assert"
 )
@@ -16,11 +16,11 @@ func stdBrotliCompress(level int, target io.Writer, from *bytes.Buffer) error {
 	writer := brotli.NewWriterLevel(target, level)
 
 	if _, err := writer.Write(from.Bytes()); err != nil {
-		return fmt.Errorf("decompressors: brotli_test: failed to write data: %w", err)
+		return fmt.Errorf("decompressor: brotli_test: failed to write data: %w", err)
 	}
 
 	if err := writer.Flush(); err != nil {
-		return fmt.Errorf("decompressors: brotli_test: failed to flush data: %w", err)
+		return fmt.Errorf("decompressor: brotli_test: failed to flush data: %w", err)
 	}
 
 	return nil
@@ -34,7 +34,7 @@ func TestBrotli(t *testing.T) {
 	brotlied := &bytes.Buffer{}
 	unbrotlied := &bytes.Buffer{}
 
-	decompressor := decompressors.NewBrotli()
+	decompressor := decompressor.NewBrotli()
 
 	if err := stdBrotliCompress((brotli.BestCompression-brotli.BestSpeed)/2, brotlied, testInput); err != nil {
 		t.Fatalf("TestBrotliDecompression: stdBrotliCompress: %v of type %T", err, err)
@@ -51,7 +51,7 @@ func BenchmarkBrotli(b *testing.B) {
 	testInput := bytes.NewBufferString("there is fake string *^(^$&*^&")
 	brotlied := &bytes.Buffer{}
 	unbrotlied := &bytes.Buffer{}
-	decompressor := decompressors.NewBrotli()
+	decompressor := decompressor.NewBrotli()
 	level := (brotli.BestCompression - brotli.BestSpeed) / 2
 
 	if err := stdBrotliCompress(level, brotlied, testInput); err != nil {

@@ -1,4 +1,4 @@
-package compressors_test
+package compressor_test
 
 import (
 	"bytes"
@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/alexdyukov/compresshandler/internal/compressors"
+	"github.com/alexdyukov/compresshandler/internal/compressor"
 	"github.com/andybalholm/brotli"
 	"github.com/stretchr/testify/assert"
 )
@@ -18,7 +18,7 @@ func stdBrotliDecompress(target *bytes.Buffer, from io.Reader) error {
 
 	_, err := target.ReadFrom(reader)
 	if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) {
-		return fmt.Errorf("compressors: brotli_test: failed to read data: %w", err)
+		return fmt.Errorf("compressor: brotli_test: failed to read data: %w", err)
 	}
 
 	return nil
@@ -27,12 +27,12 @@ func stdBrotliDecompress(target *bytes.Buffer, from io.Reader) error {
 func TestBrotli(t *testing.T) {
 	t.Parallel()
 
-	testInput := bytes.NewBufferString("there is fake string *^(^$&*^&")
+	testInput := []byte("there is fake string *^(^$&*^&")
 
 	brotlied := &bytes.Buffer{}
 	unbrotlied := &bytes.Buffer{}
 
-	compressor := compressors.NewBrotli((brotli.BestCompression - brotli.BestSpeed) / 2)
+	compressor := compressor.NewBrotli((brotli.BestCompression - brotli.BestSpeed) / 2)
 
 	if err := compressor.Compress(brotlied, testInput); err != nil {
 		t.Fatalf("TestBrotliCompression: Compress: %v of type %T", err, err)
@@ -42,13 +42,13 @@ func TestBrotli(t *testing.T) {
 		t.Fatalf("TestBrotliCompression: stdBrotliDecompress: %v of type %T", err, err)
 	}
 
-	assert.True(t, strings.TrimSpace(testInput.String()) == strings.TrimSpace(unbrotlied.String()))
+	assert.True(t, strings.TrimSpace(string(testInput)) == strings.TrimSpace(unbrotlied.String()))
 }
 
 func BenchmarkBrotli(b *testing.B) {
-	testInput := bytes.NewBufferString("there is fake string *^(^$&*^&")
+	testInput := []byte("there is fake string *^(^$&*^&")
 	brotlied := &bytes.Buffer{}
-	compressor := compressors.NewBrotli((brotli.BestCompression - brotli.BestSpeed) / 2)
+	compressor := compressor.NewBrotli((brotli.BestCompression - brotli.BestSpeed) / 2)
 
 	b.ResetTimer()
 

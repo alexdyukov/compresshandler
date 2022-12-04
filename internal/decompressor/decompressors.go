@@ -1,4 +1,4 @@
-package decompressors
+package decompressor
 
 import (
 	"bytes"

@@ -1,4 +1,4 @@
-package compressors_test
+package compressor_test
 
 import (
 	"bytes"
@@ -9,19 +9,19 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/alexdyukov/compresshandler/internal/compressors"
+	"github.com/alexdyukov/compresshandler/internal/compressor"
 	"github.com/stretchr/testify/assert"
 )
 
 func stdZlibDecompress(target *bytes.Buffer, from io.Reader) error {
 	reader, err := zlib.NewReader(from)
 	if err != nil {
-		return fmt.Errorf("compressors: zlib_test: failed to initialize reader: %w", err)
+		return fmt.Errorf("compressor: zlib_test: failed to initialize reader: %w", err)
 	}
 
 	_, err = target.ReadFrom(reader)
 	if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) {
-		return fmt.Errorf("compressors: zlib_test: failed to read data: %w", err)
+		return fmt.Errorf("compressor: zlib_test: failed to read data: %w", err)
 	}
 
 	return nil
@@ -30,12 +30,12 @@ func stdZlibDecompress(target *bytes.Buffer, from io.Reader) error {
 func TestZlib(t *testing.T) {
 	t.Parallel()
 
-	testInput := bytes.NewBufferString("there is fake string *^(^$&*^&")
+	testInput := []byte("there is fake string *^(^$&*^&")
 
 	zlibed := &bytes.Buffer{}
 	unzlibed := &bytes.Buffer{}
 
-	compressor := compressors.NewZlib((zlib.BestCompression - zlib.BestSpeed) / 2)
+	compressor := compressor.NewZlib((zlib.BestCompression - zlib.BestSpeed) / 2)
 
 	if err := compressor.Compress(zlibed, testInput); err != nil {
 		t.Fatalf("TestZlibCompression: Compress: %v of type %T", err, err)
@@ -45,13 +45,13 @@ func TestZlib(t *testing.T) {
 		t.Fatalf("TestZlibCompression: stdZlibDecompress: %v of type %T", err, err)
 	}
 
-	assert.True(t, strings.TrimSpace(testInput.String()) == strings.TrimSpace(unzlibed.String()))
+	assert.True(t, strings.TrimSpace(string(testInput)) == strings.TrimSpace(unzlibed.String()))
 }
 
 func BenchmarkZlib(b *testing.B) {
-	testInput := bytes.NewBufferString("there is fake string *^(^$&*^&")
+	testInput := []byte("there is fake string *^(^$&*^&")
 	zlibed := &bytes.Buffer{}
-	compressor := compressors.NewZlib((zlib.BestCompression - zlib.BestSpeed) / 2)
+	compressor := compressor.NewZlib((zlib.BestCompression - zlib.BestSpeed) / 2)
 
 	b.ResetTimer()
 

@@ -1,4 +1,4 @@
-package decompressors_test
+package decompressor_test
 
 import (
 	"bytes"
@@ -8,22 +8,22 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/alexdyukov/compresshandler/internal/decompressors"
+	"github.com/alexdyukov/compresshandler/internal/decompressor"
 	"github.com/stretchr/testify/assert"
 )
 
 func stdGzipCompress(level int, target io.Writer, from *bytes.Buffer) error {
 	writer, err := gzip.NewWriterLevel(target, level)
 	if err != nil {
-		return fmt.Errorf("decompressors: gzip_test: failed to initialize writer: %w", err)
+		return fmt.Errorf("decompressor: gzip_test: failed to initialize writer: %w", err)
 	}
 
 	if _, err := writer.Write(from.Bytes()); err != nil {
-		return fmt.Errorf("decompressors: gzip_test: failed to write data: %w", err)
+		return fmt.Errorf("decompressor: gzip_test: failed to write data: %w", err)
 	}
 
 	if err := writer.Flush(); err != nil {
-		return fmt.Errorf("decompressors: gzip_test: failed to flush data: %w", err)
+		return fmt.Errorf("decompressor: gzip_test: failed to flush data: %w", err)
 	}
 
 	return nil
@@ -37,7 +37,7 @@ func TestGzip(t *testing.T) {
 	gziped := &bytes.Buffer{}
 	ungziped := &bytes.Buffer{}
 
-	decompressor := decompressors.NewGzip()
+	decompressor := decompressor.NewGzip()
 
 	if err := stdGzipCompress((gzip.BestCompression-gzip.BestSpeed)/2, gziped, testInput); err != nil {
 		t.Fatalf("TestGzipDecompression: stdGzipCompress: %v of type %T", err, err)
@@ -54,7 +54,7 @@ func BenchmarkGzip(b *testing.B) {
 	testInput := bytes.NewBufferString("there is fake string *^(^$&*^&")
 	gziped := &bytes.Buffer{}
 	ungziped := &bytes.Buffer{}
-	decompressor := decompressors.NewGzip()
+	decompressor := decompressor.NewGzip()
 	level := (gzip.BestCompression - gzip.BestSpeed) / 2
 
 	if err := stdGzipCompress(level, gziped, testInput); err != nil {

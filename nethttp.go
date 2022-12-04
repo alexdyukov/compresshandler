@@ -2,73 +2,36 @@ package compresshandler
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"net/http"
 	"sync"
 
-	"github.com/alexdyukov/compresshandler/internal/compressors"
-	"github.com/alexdyukov/compresshandler/internal/decompressors"
 	"github.com/alexdyukov/compresshandler/internal/encoding"
 )
 
-type (
-	availableCompressors         map[int]compressors.Compressor
-	availableDecompressors       map[int]decompressors.Decompressor
-	wrappedNetHTTPResponseWriter struct {
-		http.ResponseWriter
-		bufferedResponse *bytes.Buffer
-		statusCode       *int
-	}
-)
-
-func (wrw *wrappedNetHTTPResponseWriter) Write(a []byte) (int, error) {
-	n, err := wrw.bufferedResponse.Write(a)
-
-	return n, fmt.Errorf("%w", err)
-}
-
-func (wrw *wrappedNetHTTPResponseWriter) WriteHeader(statusCode int) {
-	*(wrw.statusCode) = statusCode
-}
-
 func NewNetHTTP(config Config) func(next http.Handler) http.Handler {
-	config.fix()
-
 	bufferPool := &sync.Pool{
 		New: func() interface{} {
 			return &bytes.Buffer{}
 		},
 	}
 
-	comps := availableCompressors{
-		encoding.BrType:      compressors.NewBrotli(config.BrotliLevel),
-		encoding.GzipType:    compressors.NewGzip(config.GzipLevel),
-		encoding.DeflateType: compressors.NewZlib(config.ZlibLevel),
-	}
+	comps := config.getPossibleCompressors()
 
-	decomps := availableDecompressors{
-		encoding.BrType:      decompressors.NewBrotli(),
-		encoding.GzipType:    decompressors.NewGzip(),
-		encoding.DeflateType: decompressors.NewZlib(),
-	}
+	decomps := config.getPossibleDecompressors()
+
+	minlen := config.MinContentLength
 
 	return func(next http.Handler) http.Handler {
-		return decompressNetHTTP(bufferPool,
-			decomps,
-			compressNetHTTP(config.MinContentLength, bufferPool, comps, next),
-		)
+		wrapped := decompressNetHTTP(bufferPool, decomps, next)
+		wrapped = compressNetHTTP(minlen, bufferPool, comps, wrapped)
+
+		return wrapped
 	}
 }
 
-func decompressNetHTTP(buffers *sync.Pool, decomps availableDecompressors, next http.Handler) http.Handler {
+func decompressNetHTTP(bufferPool *sync.Pool, decomps decompressors, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(responseWriter http.ResponseWriter, request *http.Request) {
-		if request.Header.Get("Upgrade") != "" {
-			next.ServeHTTP(responseWriter, request)
-
-			return
-		}
-
 		encodings, err := encoding.ParseContentEncoding([]byte(request.Header.Get("Content-Encoding")))
 		if err != nil {
 			http.Error(responseWriter, "not supported Content-Encoding", http.StatusBadRequest)
@@ -79,20 +42,20 @@ func decompressNetHTTP(buffers *sync.Pool, decomps availableDecompressors, next 
 		usedBuffers := []*bytes.Buffer{}
 		defer func() {
 			for _, v := range usedBuffers {
-				buffers.Put(v)
+				bufferPool.Put(v)
 			}
 		}()
 
 		for enc := 0; enc < len(encodings); enc++ {
-			buffer, okay := buffers.Get().(*bytes.Buffer)
+			buffer, okay := bufferPool.Get().(*bytes.Buffer)
 			if !okay {
 				panic("unreachable code")
 			}
 			buffer.Reset()
 			usedBuffers = append(usedBuffers, buffer)
 
-			decompressor := decomps[encodings[enc]]
-			if err = decompressor.Decompress(buffer, request.Body); err != nil {
+			decomp := decomps[encodings[enc]]
+			if err = decomp.Decompress(buffer, request.Body); err != nil {
 				http.Error(responseWriter, "invalid request body with presented Content-Encoding", http.StatusBadRequest)
 
 				return
@@ -101,37 +64,41 @@ func decompressNetHTTP(buffers *sync.Pool, decomps availableDecompressors, next 
 			request.Body = io.NopCloser(buffer)
 		}
 
+		request.Header.Del("Content-Encoding")
+
 		next.ServeHTTP(responseWriter, request)
 	})
 }
 
-func compressNetHTTP(minLength int, buffers *sync.Pool, comps availableCompressors, next http.Handler) http.Handler {
+func compressNetHTTP(minLength int, bufferPool *sync.Pool, comps compressors, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(responseWriter http.ResponseWriter, request *http.Request) {
 		statusCode := http.StatusOK
 
-		buffer, okay := buffers.Get().(*bytes.Buffer)
+		upstreamResponse, okay := bufferPool.Get().(*bytes.Buffer)
 		if !okay {
 			panic("unreachable code")
 		}
-		buffer.Reset()
-		defer buffers.Put(buffer)
+		upstreamResponse.Reset()
+		defer bufferPool.Put(upstreamResponse)
 
 		next.ServeHTTP(&wrappedNetHTTPResponseWriter{
 			ResponseWriter:   responseWriter,
-			bufferedResponse: buffer,
+			bufferedResponse: upstreamResponse,
 			statusCode:       &statusCode,
 		}, request)
 
+		upstreamResponseBody := upstreamResponse.Bytes()
+
 		if responseWriter.Header().Get("Content-Type") == "" {
-			responseWriter.Header().Set("Content-Type", http.DetectContentType(buffer.Bytes()))
+			responseWriter.Header().Set("Content-Type", http.DetectContentType(upstreamResponseBody))
 		}
 
 		preferedEncoding := encoding.ParseAcceptEncoding([]byte(request.Header.Get("Accept-Encoding")))
 
-		compressor, okay := comps[preferedEncoding]
-		if !okay || buffer.Len() < minLength {
+		comp, okay := comps[preferedEncoding]
+		if !okay || upstreamResponse.Len() < minLength || responseWriter.Header().Get("Content-Encoding") != "" {
 			responseWriter.WriteHeader(statusCode)
-			_, err := responseWriter.Write(buffer.Bytes())
+			_, err := responseWriter.Write(upstreamResponse.Bytes())
 			if err != nil {
 				panic(err)
 			}
@@ -142,7 +109,7 @@ func compressNetHTTP(minLength int, buffers *sync.Pool, comps availableCompresso
 		responseWriter.Header().Set("Content-Encoding", encoding.ToString(preferedEncoding))
 		responseWriter.WriteHeader(statusCode)
 
-		err := compressor.Compress(responseWriter, buffer)
+		err := comp.Compress(responseWriter, upstreamResponseBody)
 		if err != nil {
 			panic(err)
 		}

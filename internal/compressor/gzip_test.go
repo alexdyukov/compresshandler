@@ -1,4 +1,4 @@
-package compressors_test
+package compressor_test
 
 import (
 	"bytes"
@@ -9,19 +9,19 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/alexdyukov/compresshandler/internal/compressors"
+	"github.com/alexdyukov/compresshandler/internal/compressor"
 	"github.com/stretchr/testify/assert"
 )
 
 func stdGzipDecompress(target *bytes.Buffer, from io.Reader) error {
 	reader, err := gzip.NewReader(from)
 	if err != nil {
-		return fmt.Errorf("compressors: gzip_test: failed to initialize reader: %w", err)
+		return fmt.Errorf("compressor: gzip_test: failed to initialize reader: %w", err)
 	}
 
 	_, err = target.ReadFrom(reader)
 	if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) {
-		return fmt.Errorf("compressors: gzip_test: failed to read data: %w", err)
+		return fmt.Errorf("compressor: gzip_test: failed to read data: %w", err)
 	}
 
 	return nil
@@ -30,12 +30,12 @@ func stdGzipDecompress(target *bytes.Buffer, from io.Reader) error {
 func TestGzip(t *testing.T) {
 	t.Parallel()
 
-	testInput := bytes.NewBufferString("there is fake string *^(^$&*^&")
+	testInput := []byte("there is fake string *^(^$&*^&")
 
 	gziped := &bytes.Buffer{}
 	ungziped := &bytes.Buffer{}
 
-	compressor := compressors.NewGzip((gzip.BestCompression - gzip.BestSpeed) / 2)
+	compressor := compressor.NewGzip((gzip.BestCompression - gzip.BestSpeed) / 2)
 
 	if err := compressor.Compress(gziped, testInput); err != nil {
 		t.Fatalf("TestGzipCompression: Compress: %v of type %T", err, err)
@@ -45,13 +45,13 @@ func TestGzip(t *testing.T) {
 		t.Fatalf("TestGzipCompression: stdGzipDecompress: %v of type %T", err, err)
 	}
 
-	assert.True(t, strings.TrimSpace(testInput.String()) == strings.TrimSpace(ungziped.String()))
+	assert.True(t, strings.TrimSpace(string(testInput)) == strings.TrimSpace(ungziped.String()))
 }
 
 func BenchmarkGzipCompressor(b *testing.B) {
-	testInput := bytes.NewBufferString("there is fake string *^(^$&*^&")
+	testInput := []byte("there is fake string *^(^$&*^&")
 	gziped := &bytes.Buffer{}
-	compressor := compressors.NewGzip((gzip.BestCompression - gzip.BestSpeed) / 2)
+	compressor := compressor.NewGzip((gzip.BestCompression - gzip.BestSpeed) / 2)
 
 	b.ResetTimer()
 
