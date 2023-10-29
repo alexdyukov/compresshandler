@@ -34,7 +34,11 @@ func decompressNetHTTP(bufferPool *sync.Pool, decomps decompressors, next http.H
 	return http.HandlerFunc(func(responseWriter http.ResponseWriter, request *http.Request) {
 		encodings, err := encoding.ParseContentEncoding([]byte(request.Header.Get("Content-Encoding")))
 		if err != nil {
-			http.Error(responseWriter, "not supported Content-Encoding", http.StatusBadRequest)
+			// https://www.rfc-editor.org/rfc/rfc7231#section-3.1.2.2
+			// An origin server MAY respond with a status code of 415 (Unsupported
+			// Media Type) if a representation in the request message has a content
+			// coding that is not acceptable.
+			http.Error(responseWriter, "not supported Content-Encoding", http.StatusUnsupportedMediaType)
 
 			return
 		}
@@ -88,17 +92,18 @@ func compressNetHTTP(minLength int, bufferPool *sync.Pool, comps compressors, ne
 		}, request)
 
 		upstreamResponseBody := upstreamResponse.Bytes()
+		responseWriterHeaders := responseWriter.Header()
 
-		if responseWriter.Header().Get("Content-Type") == "" {
-			responseWriter.Header().Set("Content-Type", http.DetectContentType(upstreamResponseBody))
+		if responseWriterHeaders.Get("Content-Type") == "" {
+			responseWriterHeaders.Set("Content-Type", http.DetectContentType(upstreamResponseBody))
 		}
 
 		preferedEncoding := encoding.ParseAcceptEncoding([]byte(request.Header.Get("Accept-Encoding")))
 
 		comp, okay := comps[preferedEncoding]
-		if !okay || upstreamResponse.Len() < minLength || responseWriter.Header().Get("Content-Encoding") != "" {
+		if !okay || len(upstreamResponseBody) < minLength || responseWriterHeaders.Get("Content-Encoding") != "" {
 			responseWriter.WriteHeader(statusCode)
-			_, err := responseWriter.Write(upstreamResponse.Bytes())
+			_, err := responseWriter.Write(upstreamResponseBody)
 			if err != nil {
 				panic(err)
 			}
@@ -106,7 +111,8 @@ func compressNetHTTP(minLength int, bufferPool *sync.Pool, comps compressors, ne
 			return
 		}
 
-		responseWriter.Header().Set("Content-Encoding", encoding.ToString(preferedEncoding))
+		responseWriterHeaders.Del("Content-Length")
+		responseWriterHeaders.Set("Content-Encoding", encoding.ToString(preferedEncoding))
 		responseWriter.WriteHeader(statusCode)
 
 		err := comp.Compress(responseWriter, upstreamResponseBody)

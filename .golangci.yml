@@ -2,7 +2,6 @@ run:
   timeout: 5m
   tests: false
   modules-download-mode: readonly
-  go: 1.18
 
 linters:
   enable-all: true
@@ -10,19 +9,18 @@ linters:
     - funlen
     - dupl
     - revive
+    - depguard
 
 linters-settings:
   errcheck:
     check-type-assertions: true
     check-blank: true
   gosimple:
-    go: "1.18"
     checks: ["all"]
   govet:
     check-shadowing: true
     enable-all: true
   staticcheck:
-    go: "1.18"
     checks: ["all"]
   decorder:
     disable-dec-order-check: false
@@ -45,6 +43,8 @@ linters-settings:
       - diagnostic
       - style
       - performance
+    disabled-checks:
+      - unnamedResult
     settings:
       captLocal:
         paramsOnly: false
@@ -54,8 +54,6 @@ linters-settings:
         skipArchDependent: false
       underef:
         skipRecvDeref: false
-      unnamedResult:
-        checkExported: true
   gofumpt:
     extra-rules: true
   gomnd:
@@ -80,6 +78,7 @@ linters-settings:
   tenv:
     all: true
   varnamelen:
+    max-distance: 20
     check-receiver: true
     check-return: true
     check-type-param: true
@@ -91,5 +90,7 @@ linters-settings:
   whitespace:
     multi-if: true
     multi-func: true
+  nonamedreturns:
+    report-error-in-defer: true
   lll:
     line-length: 135
