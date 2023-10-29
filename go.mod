@@ -1,12 +1,12 @@
 module github.com/alexdyukov/compresshandler
 
-go 1.18
+go 1.20
 
 require (
-	github.com/andybalholm/brotli v1.0.4
-	github.com/klauspost/compress v1.15.12
+	github.com/andybalholm/brotli v1.0.6
+	github.com/klauspost/compress v1.17.2
 	github.com/stretchr/testify v1.8.0
-	github.com/valyala/fasthttp v1.43.0
+	github.com/valyala/fasthttp v1.50.0
 )
 
 require (

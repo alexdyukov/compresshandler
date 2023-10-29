@@ -2,8 +2,11 @@ package encoding
 
 func ParseAcceptEncoding(header []byte) int {
 	parsedQualities := [typeArraySize]int{}
-	encodingType := 0
-	qualityValue := 0
+
+	var (
+		encodingType int
+		qualityValue int
+	)
 
 	for pos := 0; pos < len(header); pos++ {
 		encodingType, pos = getNextEncodingType(header, pos)
