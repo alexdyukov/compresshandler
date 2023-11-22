@@ -14,7 +14,7 @@ According to RFCs there is no 'Accept-Encoding' header at server side response. 
 
 ### Encoding support
 
-There is other compression algorithm: LZW and Zstd. But overall score for encoding+transfer+decoding is the same. If you really want to increase content transfer performance, [its better](https://advancedweb.hu/revisiting-webapp-performance-on-http-2/) to use [minification](github.com/tdewolff/minify) + compression (this package) + http2, rather then jumps between algos, because:
+There is other compression algorithm: LZW and Zstd. But overall score for encoding+transfer+decoding is the same. If you really want to increase content transfer performance, [its better](https://advancedweb.hu/revisiting-webapp-performance-on-http-2/) to use [minification](https://github.com/tdewolff/minify) + compression (this package) + http2, rather then jumps between algos, because:
 * users does not care which one we use, because only TTI (time to interactive) counts. There is no difference between 0.28sec TTI and 0.30sec TTI
 * operation team does not care which one we use, because only total cost of io/cpu/ram counts. There is no win-win algo, who dramatically decrease it from 10k$ into 1k$
 * other developers too lazy to enable any non gzip compression/decompression support, because time is money
@@ -78,19 +78,6 @@ func main() {
 
         fasthttp.ListenAndServe(":8080", compress(echo))
 }
-```
-
-## TODOs
-
-* configurable content response type. We dont need to compress already compressed image or archives:
-```
-https://www.iana.org/assignments/media-types/media-types.xhtml
-# default should be:
-application/*json
-application/*xml
-application/*json
-*javascript
-*ecmascript
 ```
 
 ## License
