@@ -4,9 +4,9 @@ go 1.20
 
 require (
 	github.com/andybalholm/brotli v1.0.6
-	github.com/klauspost/compress v1.17.2
+	github.com/klauspost/compress v1.17.3
 	github.com/stretchr/testify v1.8.0
-	github.com/valyala/fasthttp v1.50.0
+	github.com/valyala/fasthttp v1.51.0
 )
 
 require (

@@ -25,4 +25,4 @@ jobs:
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
           git checkout -b fix/autoupdate_dependencies
           git commit -am "Fix: $(date +%F) update dependencies" || exit 0
-          git push && gh pr create -a ${{ github.repository_owner }} --fill || exit 0
+          git push --set-upstream origin fix/autoupdate_dependencies && gh pr create -a ${{ github.repository_owner }} --fill || exit 0
