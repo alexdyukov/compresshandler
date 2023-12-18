@@ -19,6 +19,8 @@ jobs:
       - name: Locally update dependencies
         run: go get -u ./... && go mod tidy
       - name: Commit changes and create PR if we have any changes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config --global user.name 'update_deps robot'
           git config --global user.email 'noreply@example.com'
