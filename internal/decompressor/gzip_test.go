@@ -12,8 +12,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func stdGzipCompress(level int, target io.Writer, from *bytes.Buffer) error {
-	writer, err := gzip.NewWriterLevel(target, level)
+func stdGzipCompress(level int, to io.Writer, from *bytes.Buffer) error {
+	writer, err := gzip.NewWriterLevel(to, level)
 	if err != nil {
 		return fmt.Errorf("decompressor: gzip_test: failed to initialize writer: %w", err)
 	}

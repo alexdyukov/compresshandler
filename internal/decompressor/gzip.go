@@ -10,8 +10,9 @@ import (
 	"github.com/klauspost/compress/gzip"
 )
 
+// Gzip is gzip typed (http encoding type "gzip") Decompressor.
 type Gzip struct {
-	sync.Pool
+	pool sync.Pool
 }
 
 func getInitialGzipSlice() []byte {
@@ -29,6 +30,7 @@ func getInitialGzipSlice() []byte {
 	return initialBuffer.Bytes()
 }
 
+// NewGzip creates new gzip typed (http encoding type "gzip") Decompressor.
 func NewGzip() *Gzip {
 	initialSlice := getInitialGzipSlice()
 
@@ -44,19 +46,20 @@ func NewGzip() *Gzip {
 	}}
 }
 
-func (decompressor *Gzip) Decompress(target *bytes.Buffer, from io.Reader) error {
-	reader, ok := decompressor.Get().(*gzip.Reader)
+// Decompress decompressing bytes from src to dst with gzip decompress algo until error occurs or end of src.
+func (decompressor *Gzip) Decompress(dst *bytes.Buffer, src io.Reader) error {
+	reader, ok := decompressor.pool.Get().(*gzip.Reader)
 	if !ok {
 		panic("unreachable code")
 	}
 
-	defer decompressor.Put(reader)
+	defer decompressor.pool.Put(reader)
 
-	if err := reader.Reset(from); err != nil {
+	if err := reader.Reset(src); err != nil {
 		return fmt.Errorf("decompressor: gzip: failed to initialize reader from pool: %w", err)
 	}
 
-	_, err := target.ReadFrom(reader)
+	_, err := dst.ReadFrom(reader)
 	if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) {
 		return fmt.Errorf("decompressor: gzip: failed to decompress data: %w", err)
 	}

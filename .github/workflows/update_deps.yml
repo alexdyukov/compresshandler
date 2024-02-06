@@ -15,16 +15,13 @@ jobs:
           go-version: 'oldstable'
           check-latest: true
       - name: Checkout git repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Locally update dependencies
         run: go get -u ./... && go mod tidy
       - name: Commit changes and create PR if we have any changes
+        run: bash .github/update_deps.sh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          git config --global user.name 'update_deps robot'
-          git config --global user.email 'noreply@example.com'
-          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
-          git checkout -b fix/autoupdate_dependencies
-          git commit -am "Fix: $(date +%F) update dependencies" || exit 0
-          git push --set-upstream origin fix/autoupdate_dependencies && gh pr create -a ${{ github.repository_owner }} --fill || exit 0
+          BRANCH_NAME: fix/autoupdate_dependencies
+          REPO_NAME: ${{ github.repository }}
+          REPO_OWNER: ${{ github.repository_owner }}

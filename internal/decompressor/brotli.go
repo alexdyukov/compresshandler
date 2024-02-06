@@ -10,8 +10,9 @@ import (
 	"github.com/andybalholm/brotli"
 )
 
+// Brotli is brotli typed (http encoding type "br") Decompressor.
 type Brotli struct {
-	sync.Pool
+	pool sync.Pool
 }
 
 func getInitialBrotliSlice() []byte {
@@ -26,6 +27,7 @@ func getInitialBrotliSlice() []byte {
 	return initialBuffer.Bytes()
 }
 
+// NewBrotli creates new brotli typed (http encoding type "br") Decompressor.
 func NewBrotli() *Brotli {
 	initialSlice := getInitialBrotliSlice()
 
@@ -36,19 +38,20 @@ func NewBrotli() *Brotli {
 	}}
 }
 
-func (decompressor *Brotli) Decompress(target *bytes.Buffer, from io.Reader) error {
-	reader, ok := decompressor.Get().(*brotli.Reader)
+// Decompress decompressing bytes from src to dst with brotli decompress algo until error occurs or end of src.
+func (decompressor *Brotli) Decompress(dst *bytes.Buffer, src io.Reader) error {
+	reader, ok := decompressor.pool.Get().(*brotli.Reader)
 	if !ok {
 		panic("unreachable code")
 	}
 
-	defer decompressor.Put(reader)
+	defer decompressor.pool.Put(reader)
 
-	if err := reader.Reset(from); err != nil {
+	if err := reader.Reset(src); err != nil {
 		return fmt.Errorf("decompressor: brotli: failed to initialize reader from pool: %w", err)
 	}
 
-	_, err := target.ReadFrom(reader)
+	_, err := dst.ReadFrom(reader)
 	if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) {
 		return fmt.Errorf("decompressor: brotli: failed to decompress data: %w", err)
 	}

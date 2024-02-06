@@ -1,3 +1,5 @@
+// Package compresshandler provides http middlewares which auto compress http responses and
+// auto decompress http requests based on request's Accept-Encoding and Content-Encoding headers.
 package compresshandler
 
 import (
@@ -13,11 +15,12 @@ import (
 type (
 	compressors   map[int]compressor.Compressor
 	decompressors map[int]decompressor.Decompressor
-	Config        struct {
-		GzipLevel        int
-		ZlibLevel        int
-		BrotliLevel      int
-		MinContentLength int
+	// Config describes configuration for New* methods.
+	Config struct {
+		GzipLevel        int // gzip compression level for response between GzipBestSpeed and GzipBestCompression including boundaries
+		ZlibLevel        int // zlib compression level for response between ZlibBestSpeed and ZlibBestCompression including boundaries
+		BrotliLevel      int // brotli compression level for response between BrotliBestSpeed and BrotliBestCompression including boundaries
+		MinContentLength int // minimal length of raw response to be compress
 	}
 	wrappedNetHTTPResponseWriter struct {
 		http.ResponseWriter

@@ -1,7 +1,6 @@
 package compressor
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"sync"
@@ -9,8 +8,9 @@ import (
 	"github.com/klauspost/compress/zlib"
 )
 
+// Zlib is zlib typed (http encoding type "deflate") Compressor.
 type Zlib struct {
-	sync.Pool
+	pool sync.Pool
 }
 
 const (
@@ -18,10 +18,11 @@ const (
 	ZlibBestSpeed       = zlib.BestSpeed
 )
 
+// NewZlib creates new zlib typed (http encoding type "deflate") Compressor.
 func NewZlib(level int) *Zlib {
 	return &Zlib{sync.Pool{
 		New: func() interface{} {
-			writer, err := zlib.NewWriterLevel(&bytes.Buffer{}, level)
+			writer, err := zlib.NewWriterLevel(nil, level)
 			if err != nil {
 				panic("unreachable code")
 			}
@@ -31,17 +32,18 @@ func NewZlib(level int) *Zlib {
 	}}
 }
 
-func (compressorPool *Zlib) Compress(target io.Writer, from []byte) error {
-	writer, ok := compressorPool.Get().(*zlib.Writer)
+// Compress compressing bytes from src to dst with zlib compressing algo until error occurs or end of src.
+func (compressorPool *Zlib) Compress(dst io.Writer, src []byte) error {
+	writer, ok := compressorPool.pool.Get().(*zlib.Writer)
 	if !ok {
 		panic("unreachable code")
 	}
 
-	defer compressorPool.Put(writer)
+	defer compressorPool.pool.Put(writer)
 
-	writer.Reset(target)
+	writer.Reset(dst)
 
-	if _, err := writer.Write(from); err != nil {
+	if _, err := writer.Write(src); err != nil {
 		return fmt.Errorf("compressor: zlib: failed to write data: %w", err)
 	}
 

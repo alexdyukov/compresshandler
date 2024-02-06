@@ -15,8 +15,9 @@ type (
 		io.ReadCloser
 		Reset(r io.Reader, dict []byte) error
 	}
+	// Zlib is zlib typed (http encoding type "deflate") Decompressor.
 	Zlib struct {
-		sync.Pool
+		pool sync.Pool
 	}
 )
 
@@ -35,6 +36,7 @@ func getInitialZlibSlice() []byte {
 	return initialBuffer.Bytes()
 }
 
+// NewZlib creates new zlib typed (http encoding type "deflate") Decompressor.
 func NewZlib() *Zlib {
 	initialSlice := getInitialZlibSlice()
 
@@ -55,19 +57,20 @@ func NewZlib() *Zlib {
 	}}
 }
 
-func (decompressor *Zlib) Decompress(target *bytes.Buffer, from io.Reader) error {
-	reader, ok := decompressor.Get().(zlibReader)
+// Decompress decompressing bytes from src to dst with zlib decompress algo until error occurs or end of src.
+func (decompressor *Zlib) Decompress(dst *bytes.Buffer, src io.Reader) error {
+	reader, ok := decompressor.pool.Get().(zlibReader)
 	if !ok {
 		panic("unreachable code")
 	}
 
-	defer decompressor.Put(reader)
+	defer decompressor.pool.Put(reader)
 
-	if err := reader.Reset(from, nil); err != nil {
+	if err := reader.Reset(src, nil); err != nil {
 		return fmt.Errorf("decompressor: zlib: failed to initialize reader from pool: %w", err)
 	}
 
-	_, err := target.ReadFrom(reader)
+	_, err := dst.ReadFrom(reader)
 	if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) {
 		return fmt.Errorf("decompressor: zlib: failed to decompress data: %w", err)
 	}

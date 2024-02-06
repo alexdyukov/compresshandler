@@ -9,6 +9,7 @@ import (
 	"github.com/alexdyukov/compresshandler/internal/encoding"
 )
 
+// NewNetHTTP creates autocompressing and autodecompressing net/http middleware with provided Config.
 func NewNetHTTP(config Config) func(next http.Handler) http.Handler {
 	bufferPool := &sync.Pool{
 		New: func() interface{} {

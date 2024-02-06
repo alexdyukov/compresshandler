@@ -13,13 +13,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func stdGzipDecompress(target *bytes.Buffer, from io.Reader) error {
+func stdGzipDecompress(to *bytes.Buffer, from io.Reader) error {
 	reader, err := gzip.NewReader(from)
 	if err != nil {
 		return fmt.Errorf("compressor: gzip_test: failed to initialize reader: %w", err)
 	}
 
-	_, err = target.ReadFrom(reader)
+	_, err = to.ReadFrom(reader)
 	if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) {
 		return fmt.Errorf("compressor: gzip_test: failed to read data: %w", err)
 	}

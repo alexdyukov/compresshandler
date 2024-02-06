@@ -12,8 +12,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func stdZlibCompress(level int, target io.Writer, from *bytes.Buffer) error {
-	writer, err := zlib.NewWriterLevel(target, level)
+func stdZlibCompress(level int, to io.Writer, from *bytes.Buffer) error {
+	writer, err := zlib.NewWriterLevel(to, level)
 	if err != nil {
 		return fmt.Errorf("decompressor: zlib_test: failed to initialize writer: %w", err)
 	}

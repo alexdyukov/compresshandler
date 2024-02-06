@@ -12,8 +12,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func stdBrotliCompress(level int, target io.Writer, from *bytes.Buffer) error {
-	writer := brotli.NewWriterLevel(target, level)
+func stdBrotliCompress(level int, to io.Writer, from *bytes.Buffer) error {
+	writer := brotli.NewWriterLevel(to, level)
 
 	if _, err := writer.Write(from.Bytes()); err != nil {
 		return fmt.Errorf("decompressor: brotli_test: failed to write data: %w", err)
