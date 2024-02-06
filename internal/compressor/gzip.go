@@ -1,7 +1,6 @@
 package compressor
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"sync"
@@ -9,8 +8,9 @@ import (
 	"github.com/klauspost/compress/gzip"
 )
 
+// Gzip is gzip typed (http encoding type "gzip") Compressor.
 type Gzip struct {
-	sync.Pool
+	pool sync.Pool
 }
 
 const (
@@ -18,10 +18,11 @@ const (
 	GzipBestSpeed       = gzip.BestSpeed
 )
 
+// NewGzip creates new gzip typed (http encoding type "gzip") Compressor.
 func NewGzip(level int) *Gzip {
 	return &Gzip{sync.Pool{
 		New: func() interface{} {
-			writer, err := gzip.NewWriterLevel(&bytes.Buffer{}, level)
+			writer, err := gzip.NewWriterLevel(nil, level)
 			if err != nil {
 				panic("unreachable code")
 			}
@@ -31,17 +32,18 @@ func NewGzip(level int) *Gzip {
 	}}
 }
 
-func (compressorPool *Gzip) Compress(target io.Writer, from []byte) error {
-	writer, ok := compressorPool.Get().(*gzip.Writer)
+// Compress compressing bytes from src to dst with gzip compressing algo until error occurs or end of src.
+func (compressorPool *Gzip) Compress(dst io.Writer, src []byte) error {
+	writer, ok := compressorPool.pool.Get().(*gzip.Writer)
 	if !ok {
 		panic("unreachable code")
 	}
 
-	defer compressorPool.Put(writer)
+	defer compressorPool.pool.Put(writer)
 
-	writer.Reset(target)
+	writer.Reset(dst)
 
-	if _, err := writer.Write(from); err != nil {
+	if _, err := writer.Write(src); err != nil {
 		return fmt.Errorf("compressor: gzip: failed to write data: %w", err)
 	}
 

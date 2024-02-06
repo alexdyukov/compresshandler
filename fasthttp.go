@@ -9,6 +9,7 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
+// NewFastHTTP creates autocompressing and autodecompressing fasthttp middleware with provided Config.
 func NewFastHTTP(config Config) func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 	bufferPool := &sync.Pool{
 		New: func() interface{} {

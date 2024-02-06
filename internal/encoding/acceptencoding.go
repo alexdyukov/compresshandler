@@ -1,6 +1,7 @@
 package encoding
 
-func ParseAcceptEncoding(header []byte) int {
+// ParseAcceptEncoding parses Accept-Encoding http header value.
+func ParseAcceptEncoding(headerValue []byte) int {
 	parsedQualities := [typeArraySize]int{}
 
 	var (
@@ -8,9 +9,9 @@ func ParseAcceptEncoding(header []byte) int {
 		qualityValue int
 	)
 
-	for pos := 0; pos < len(header); pos++ {
-		encodingType, pos = getNextEncodingType(header, pos)
-		qualityValue, pos = getNextQualityValue(header, pos)
+	for pos := 0; pos < len(headerValue); pos++ {
+		encodingType, pos = getNextEncodingType(headerValue, pos)
+		qualityValue, pos = getNextQualityValue(headerValue, pos)
 
 		if encodingType != UnknownType {
 			parsedQualities[encodingType] = qualityValue
