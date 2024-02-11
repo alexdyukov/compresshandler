@@ -2,7 +2,7 @@
 Go auto compress and decompress handlers for net/http and fasthttp
 ====
 [![GoDoc](https://godoc.org/github.com/alexdyukov/compresshandler?status.svg)](https://godoc.org/github.com/alexdyukov/compresshandler)
-[![CI](https://github.com/alexdyukov/compresshandler/actions/workflows/lint.yml/badge.svg?branch=master)](https://github.com/alexdyukov/compresshandler/actions/workflows/lint.yml?query=branch%3Amaster)
+[![Tests](https://github.com/alexdyukov/compresshandler/actions/workflows/tests.yml/badge.svg?branch=master)](https://github.com/alexdyukov/compresshandler/actions/workflows/tests.yml?query=branch%3Amaster)
 
 This package provides a middleware for net/http and fasthttp that auto decompress request body and auto compress response body with prefered client compression. Supports all [IANA's initially registred tokens](https://www.rfc-editor.org/rfc/rfc2616#section-3.5)
 

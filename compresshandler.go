@@ -70,6 +70,8 @@ func (cfg *Config) getPossibleCompressors() compressors {
 }
 
 func (cfg *Config) getPossibleDecompressors() decompressors {
+	cfg.fix()
+
 	return decompressors{
 		encoding.BrType:      decompressor.NewBrotli(),
 		encoding.GzipType:    decompressor.NewGzip(),
