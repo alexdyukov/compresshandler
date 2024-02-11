@@ -56,6 +56,7 @@ func decompressFastHTTP(bufferPool *sync.Pool, decomps decompressors, next fasth
 			if !okay {
 				panic("unreachable code")
 			}
+
 			buffer.Reset()
 			usedBuffers = append(usedBuffers, buffer)
 
@@ -102,7 +103,9 @@ func compressFastHTTP(minLength int, bufferPool *sync.Pool, comps compressors, n
 		if !okay {
 			panic("unreachable code")
 		}
+
 		buffer.Reset()
+
 		defer bufferPool.Put(buffer)
 
 		err := comp.Compress(buffer, responseBody)

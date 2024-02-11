@@ -56,7 +56,9 @@ func decompressNetHTTP(bufferPool *sync.Pool, decomps decompressors, next http.H
 			if !okay {
 				panic("unreachable code")
 			}
+
 			buffer.Reset()
+
 			usedBuffers = append(usedBuffers, buffer)
 
 			decomp := decomps[encodings[enc]]
@@ -83,7 +85,9 @@ func compressNetHTTP(minLength int, bufferPool *sync.Pool, comps compressors, ne
 		if !okay {
 			panic("unreachable code")
 		}
+
 		upstreamResponse.Reset()
+
 		defer bufferPool.Put(upstreamResponse)
 
 		next.ServeHTTP(&wrappedNetHTTPResponseWriter{
@@ -104,8 +108,8 @@ func compressNetHTTP(minLength int, bufferPool *sync.Pool, comps compressors, ne
 		comp, okay := comps[preferedEncoding]
 		if !okay || len(upstreamResponseBody) < minLength || responseWriterHeaders.Get("Content-Encoding") != "" {
 			responseWriter.WriteHeader(statusCode)
-			_, err := responseWriter.Write(upstreamResponseBody)
-			if err != nil {
+
+			if _, err := responseWriter.Write(upstreamResponseBody); err != nil {
 				panic(err)
 			}
 
@@ -116,8 +120,7 @@ func compressNetHTTP(minLength int, bufferPool *sync.Pool, comps compressors, ne
 		responseWriterHeaders.Set("Content-Encoding", encoding.ToString(preferedEncoding))
 		responseWriter.WriteHeader(statusCode)
 
-		err := comp.Compress(responseWriter, upstreamResponseBody)
-		if err != nil {
+		if err := comp.Compress(responseWriter, upstreamResponseBody); err != nil {
 			panic(err)
 		}
 	})
