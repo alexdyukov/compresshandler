@@ -6,7 +6,7 @@ require (
 	github.com/andybalholm/brotli v1.1.0
 	github.com/klauspost/compress v1.17.8
 	github.com/stretchr/testify v1.8.0
-	github.com/valyala/fasthttp v1.53.0
+	github.com/valyala/fasthttp v1.54.0
 )
 
 require (
