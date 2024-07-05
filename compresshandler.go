@@ -1,5 +1,9 @@
 // Package compresshandler provides http middlewares which auto compress http responses and
 // auto decompress http requests based on request's Accept-Encoding and Content-Encoding headers.
+//
+// Deprecated: replaced with https://github.com/alexdyukov/httpencoder
+//
+// This package is archived and no new functionality will be added.
 package compresshandler
 
 import (
